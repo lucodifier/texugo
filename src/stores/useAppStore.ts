@@ -13,6 +13,7 @@ import type {
   WorkspaceState
 } from '@shared/types'
 import {
+  emptyLayout,
   setPreset,
   focusSessionInLayout,
   removeSessionFromLayout
@@ -156,10 +157,16 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   switchProject: async (id) => {
     const { workspace } = get()
+    // if id is empty, switch to multi-project / all windows view
+    const targetId = id ? id : null
+    const openProjectIds = targetId
+      ? [...new Set([...workspace.openProjectIds, targetId])]
+      : workspace.openProjectIds
+
     const nextWorkspace: WorkspaceState = {
       ...workspace,
-      openProjectIds: [...new Set([...workspace.openProjectIds, id])],
-      activeProjectId: id
+      openProjectIds,
+      activeProjectId: targetId
     }
     set({ workspace: nextWorkspace })
     await ipc.saveWorkspace(nextWorkspace)
@@ -181,49 +188,87 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setLayoutPreset: async (preset) => {
     const { projects, workspace, sessions } = get()
-    const activeProject = projects.find((p) => p.id === workspace.activeProjectId)
-    if (!activeProject) return
+    const activeProject = workspace.activeProjectId
+      ? projects.find((p) => p.id === workspace.activeProjectId)
+      : null
 
-    const projectSessions = sessions.filter((s) => s.projectId === activeProject.id).map((s) => s.id)
-    const updatedLayout = setPreset(activeProject.layout, preset, projectSessions)
-    const updatedProject = { ...activeProject, layout: updatedLayout }
+    if (activeProject) {
+      const projectSessions = sessions.filter((s) => s.projectId === activeProject.id).map((s) => s.id)
+      const updatedLayout = setPreset(activeProject.layout, preset, projectSessions)
+      const updatedProject = { ...activeProject, layout: updatedLayout }
 
-    set({
-      projects: projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    })
-    await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
+      set({
+        projects: projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+      })
+      await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
+    } else {
+      // Global multi-project workspace layout
+      const allSessionIds = sessions.map((s) => s.id)
+      const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
+      const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+      const updatedLayout = setPreset(baseLayout, preset, allSessionIds)
+      const nextWorkspace = { ...workspace, layout: updatedLayout }
+      set({ workspace: nextWorkspace })
+      await ipc.saveWorkspace(nextWorkspace)
+    }
   },
 
   assignSlot: async (slotIndex, sessionId) => {
-    const { projects, workspace } = get()
-    const activeProject = projects.find((p) => p.id === workspace.activeProjectId)
-    if (!activeProject) return
+    const { projects, workspace, sessions } = get()
+    const activeProject = workspace.activeProjectId
+      ? projects.find((p) => p.id === workspace.activeProjectId)
+      : null
 
-    const slots = [...activeProject.layout.slots]
-    slots[slotIndex] = sessionId
-    const updatedLayout = { ...activeProject.layout, slots }
-    const updatedProject = { ...activeProject, layout: updatedLayout }
+    if (activeProject) {
+      const slots = [...activeProject.layout.slots]
+      slots[slotIndex] = sessionId
+      const updatedLayout = { ...activeProject.layout, slots }
+      const updatedProject = { ...activeProject, layout: updatedLayout }
 
-    set({
-      projects: projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    })
-    await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
+      set({
+        projects: projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+      })
+      await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
+    } else {
+      const allSessionIds = sessions.map((s) => s.id)
+      const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
+      const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+      const slots = [...baseLayout.slots]
+      slots[slotIndex] = sessionId
+      const updatedLayout = { ...baseLayout, slots }
+      const nextWorkspace = { ...workspace, layout: updatedLayout }
+      set({ workspace: nextWorkspace })
+      await ipc.saveWorkspace(nextWorkspace)
+    }
   },
 
   maximizeSession: async (sessionId) => {
-    const { projects, workspace } = get()
-    const activeProject = projects.find((p) => p.id === workspace.activeProjectId)
-    if (!activeProject) return
+    const { projects, workspace, sessions } = get()
+    const activeProject = workspace.activeProjectId
+      ? projects.find((p) => p.id === workspace.activeProjectId)
+      : null
 
-    const currentMax = activeProject.layout.maximizedSessionId
-    const nextMax = currentMax === sessionId ? null : sessionId
-    const updatedLayout = { ...activeProject.layout, maximizedSessionId: nextMax }
-    const updatedProject = { ...activeProject, layout: updatedLayout }
+    if (activeProject) {
+      const currentMax = activeProject.layout.maximizedSessionId
+      const nextMax = currentMax === sessionId ? null : sessionId
+      const updatedLayout = { ...activeProject.layout, maximizedSessionId: nextMax }
+      const updatedProject = { ...activeProject, layout: updatedLayout }
 
-    set({
-      projects: projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
-    })
-    await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
+      set({
+        projects: projects.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+      })
+      await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
+    } else {
+      const allSessionIds = sessions.map((s) => s.id)
+      const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
+      const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+      const currentMax = baseLayout.maximizedSessionId
+      const nextMax = currentMax === sessionId ? null : sessionId
+      const updatedLayout = { ...baseLayout, maximizedSessionId: nextMax }
+      const nextWorkspace = { ...workspace, layout: updatedLayout }
+      set({ workspace: nextWorkspace })
+      await ipc.saveWorkspace(nextWorkspace)
+    }
   },
 
   focusSession: async (sessionId) => {
@@ -236,19 +281,29 @@ export const useAppStore = create<AppState>((set, get) => ({
   createSession: async (input) => {
     const session = await ipc.createSession(input)
     const { sessions, projects, workspace } = get()
-    const activeProject = projects.find((p) => p.id === session.projectId)
+    const targetProject = projects.find((p) => p.id === session.projectId)
 
     let updatedProjects = projects
-    if (activeProject) {
-      const projectSessionIds = [...sessions.filter((s) => s.projectId === activeProject.id).map((s) => s.id), session.id]
-      const layout = focusSessionInLayout(activeProject.layout, session.id, projectSessionIds)
-      updatedProjects = projects.map((p) => (p.id === activeProject.id ? { ...p, layout } : p))
+    if (targetProject) {
+      const projectSessionIds = [...sessions.filter((s) => s.projectId === targetProject.id).map((s) => s.id), session.id]
+      const layout = focusSessionInLayout(targetProject.layout, session.id, projectSessionIds)
+      updatedProjects = projects.map((p) => (p.id === targetProject.id ? { ...p, layout } : p))
     }
+
+    // Always place into the multi-project workspace layout as well
+    const allSessionIds = [...sessions.map((s) => s.id), session.id]
+    const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
+    const baseWLayout = workspace.layout || emptyLayout(defaultPreset)
+    const updatedWLayout = focusSessionInLayout(baseWLayout, session.id, allSessionIds)
 
     set({
       sessions: [...sessions, session],
       projects: updatedProjects,
-      workspace: { ...workspace, focusedSessionId: session.id }
+      workspace: {
+        ...workspace,
+        layout: updatedWLayout,
+        focusedSessionId: session.id
+      }
     })
     return session
   },
@@ -296,9 +351,18 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
 
+    const remainingAll = sessions.filter((s) => s.id !== id).map((s) => s.id)
+    const updatedWLayout = workspace.layout
+      ? removeSessionFromLayout(workspace.layout, id, remainingAll)
+      : workspace.layout
+
     set({
       sessions: sessions.filter((s) => s.id !== id),
-      projects: updatedProjects
+      projects: updatedProjects,
+      workspace: {
+        ...workspace,
+        layout: updatedWLayout
+      }
     })
   },
 

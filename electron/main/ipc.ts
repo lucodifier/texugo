@@ -110,11 +110,14 @@ export function registerIpc(host: Host): void {
   handle('workspace:save', (payload) => {
     const workspace = payload as WorkspaceState
     const projects = new Set(host.db.listProjects().map((project) => project.id))
+    const allSessionIds = host.db.listSessions().map((s) => s.id)
+    const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
     const next: WorkspaceState = {
       openProjectIds: workspace.openProjectIds.filter((id) => projects.has(id)),
       activeProjectId:
         workspace.activeProjectId && projects.has(workspace.activeProjectId) ? workspace.activeProjectId : null,
-      focusedSessionId: workspace.focusedSessionId
+      focusedSessionId: workspace.focusedSessionId,
+      layout: normalizeLayout(workspace.layout || emptyLayout(defaultPreset), allSessionIds)
     }
     host.db.saveWorkspace(next)
     return next
@@ -449,6 +452,13 @@ function place(host: Host, session: SessionRecord): void {
   project.layout = focusSessionInLayout(project.layout, session.id, sessionIds(host, project.id))
   project.updatedAt = Date.now()
   host.db.updateProject(project)
+
+  const workspace = host.db.getWorkspace()
+  const allSessionIds = host.db.listSessions().map((s) => s.id)
+  const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
+  const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+  workspace.layout = focusSessionInLayout(baseLayout, session.id, allSessionIds)
+  host.db.saveWorkspace(workspace)
 }
 
 function withLayout(host: Host, projectId: string) {
@@ -480,11 +490,15 @@ function deleteTranscript(host: Host, id: string): void {
 function cleanWorkspace(host: Host): WorkspaceState {
   const workspace = host.db.getWorkspace()
   const projects = new Set(host.db.listProjects().map((project) => project.id))
+  const allSessionIds = host.db.listSessions().map((s) => s.id)
+  const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
+  const layout = normalizeLayout(workspace.layout || emptyLayout(defaultPreset), allSessionIds)
   return {
     openProjectIds: workspace.openProjectIds.filter((id) => projects.has(id)),
     activeProjectId:
       workspace.activeProjectId && projects.has(workspace.activeProjectId) ? workspace.activeProjectId : null,
-    focusedSessionId: workspace.focusedSessionId
+    focusedSessionId: workspace.focusedSessionId,
+    layout
   }
 }
 

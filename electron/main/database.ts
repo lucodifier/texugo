@@ -271,7 +271,8 @@ export class AppDatabase {
     return {
       openProjectIds: Array.isArray(value.openProjectIds) ? value.openProjectIds.filter((id) => typeof id === 'string') : [],
       activeProjectId: typeof value.activeProjectId === 'string' ? value.activeProjectId : null,
-      focusedSessionId: typeof value.focusedSessionId === 'string' ? value.focusedSessionId : null
+      focusedSessionId: typeof value.focusedSessionId === 'string' ? value.focusedSessionId : null,
+      layout: value.layout
     }
   }
 

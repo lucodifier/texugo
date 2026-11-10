@@ -3,10 +3,6 @@ import {
   X,
   Plus,
   GitBranch,
-  Layout,
-  Maximize2,
-  Columns,
-  Rows,
   Grid,
   ChevronDown,
   Bot
@@ -31,7 +27,9 @@ export const Header: React.FC = () => {
   const [gitInfo, setGitInfo] = useState<GitInfo | null>(null)
   const [isAgentMenuOpen, setIsAgentMenuOpen] = useState(false)
 
-  const activeProject = projects.find((p) => p.id === workspace.activeProjectId)
+  const activeProject = workspace.activeProjectId
+    ? projects.find((p) => p.id === workspace.activeProjectId)
+    : null
   const openProjects = projects.filter((p) => workspace.openProjectIds.includes(p.id))
 
   useEffect(() => {
@@ -42,21 +40,11 @@ export const Header: React.FC = () => {
     ipc.inspectGit(activeProject.cwd).then(setGitInfo).catch(() => setGitInfo(null))
   }, [activeProject?.cwd])
 
-  const handleCreateAgentTerminal = async (agentId: string) => {
-    setIsAgentMenuOpen(false)
-    if (!activeProject) return
-    await createSession({
-      projectId: activeProject.id,
-      agentId,
-      cwd: activeProject.cwd
-    })
-  }
-
   const presets: { id: PresetId; label: string; icon: React.ReactNode }[] = [
     { id: '1', label: '1 Painel', icon: <div className="w-3.5 h-3.5 border border-current rounded-sm" /> },
     {
       id: '2h',
-      label: '2 Horizontais',
+      label: '2 Horizontais (Lado a Lado)',
       icon: (
         <div className="w-3.5 h-3.5 border border-current rounded-sm flex">
           <div className="w-1/2 border-r border-current" />
@@ -65,7 +53,7 @@ export const Header: React.FC = () => {
     },
     {
       id: '2v',
-      label: '2 Verticais',
+      label: '2 Verticais (Cima/Baixo)',
       icon: (
         <div className="w-3.5 h-3.5 border border-current rounded-sm flex flex-col">
           <div className="h-1/2 border-b border-current" />
@@ -116,10 +104,34 @@ export const Header: React.FC = () => {
     }
   ]
 
+  const currentPreset = activeProject
+    ? activeProject.layout.preset
+    : workspace.layout?.preset || (sessions.length > 1 ? '2h' : '1')
+
   return (
     <header className="h-11 bg-[#12161f] border-b border-[#1e2330] flex items-center justify-between px-3 select-none">
-      {/* Project Tabs */}
-      <div className="flex items-center gap-1 overflow-x-auto max-w-[50%] h-full pt-1">
+      {/* Project Tabs / Multi-Project View */}
+      <div className="flex items-center gap-1 overflow-x-auto max-w-[55%] h-full pt-1">
+        {/* Multi-Project All Windows Tab */}
+        <div
+          onClick={() => switchProject('')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t-md text-xs cursor-pointer border-t-2 transition ${
+            workspace.activeProjectId === null
+              ? 'bg-[#0c0e12] text-[#3dd6c6] border-[#3dd6c6] font-semibold'
+              : 'text-[#8e9aa8] hover:text-white border-transparent hover:bg-[#181d29]'
+          }`}
+          title="Ver todos os projetos e terminais divididos lado a lado na mesma tela"
+        >
+          <Grid size={13} className="text-[#3dd6c6]" />
+          <span>Todas as Janelas</span>
+          {sessions.length > 0 && (
+            <span className="px-1.5 py-0.2 rounded-full bg-[#1e2536] text-[10px] text-[#8e9aa8] font-mono">
+              {sessions.filter((s) => s.status === 'running' || s.status === 'starting').length}
+            </span>
+          )}
+        </div>
+
+        {/* Individual Project Tabs */}
         {openProjects.map((project) => {
           const isActive = project.id === workspace.activeProjectId
           return (
@@ -133,7 +145,7 @@ export const Header: React.FC = () => {
               }`}
             >
               <span
-                className="w-2 h-2 rounded-full"
+                className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: project.color || '#3dd6c6' }}
               />
               <span className="truncate max-w-[120px]">{project.name}</span>
@@ -142,7 +154,7 @@ export const Header: React.FC = () => {
                   e.stopPropagation()
                   closeProjectTab(project.id)
                 }}
-                className="hover:text-red-400 p-0.5 rounded"
+                className="hover:text-red-400 p-0.5 rounded text-[#6e7d91]"
               >
                 <X size={12} />
               </button>
@@ -197,11 +209,11 @@ export const Header: React.FC = () => {
           )
         })()}
 
-        {/* Layout Presets */}
-        {activeProject && (
+        {/* Layout Presets (Always visible!) */}
+        {projects.length > 0 && (
           <div className="flex items-center bg-[#181d29] border border-[#222a3a] rounded p-0.5 gap-0.5">
             {presets.map((preset) => {
-              const isSelected = activeProject.layout.preset === preset.id
+              const isSelected = currentPreset === preset.id
               return (
                 <button
                   key={preset.id}
@@ -221,7 +233,7 @@ export const Header: React.FC = () => {
         )}
 
         {/* Add Terminal Dropdown */}
-        {activeProject && (
+        {projects.length > 0 && (
           <div className="relative">
             <button
               onClick={() => setIsAgentMenuOpen(!isAgentMenuOpen)}
@@ -238,39 +250,60 @@ export const Header: React.FC = () => {
                   className="fixed inset-0 z-40"
                   onClick={() => setIsAgentMenuOpen(false)}
                 />
-                <div className="absolute right-0 mt-1 w-52 bg-[#181d29] border border-[#273144] rounded-md shadow-xl py-1 z-50">
-                  <div className="px-3 py-1 text-[10px] font-semibold text-[#6e7d91] uppercase">
-                    Agentes e Comandos
+                <div className="absolute right-0 mt-1 w-64 bg-[#181d29] border border-[#273144] rounded-md shadow-2xl py-1 z-50 max-h-96 overflow-y-auto">
+                  <div className="px-3 py-1 text-[10px] font-semibold text-[#6e7d91] uppercase tracking-wider">
+                    Iniciar no Projeto
                   </div>
-                  {agents.map((agent) => (
-                    <button
-                      key={agent.id}
-                      onClick={() => handleCreateAgentTerminal(agent.id)}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-[#cfd6e0] hover:bg-[#222a3a] hover:text-white text-left transition"
-                    >
-                      <span
-                        className="w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] text-black"
-                        style={{ backgroundColor: agent.color || '#3dd6c6' }}
-                      >
-                        {agent.icon || agent.name.slice(0, 2)}
-                      </span>
-                      <div className="truncate flex-1">
-                        <div className="font-medium">{agent.name}</div>
-                        <div className="text-[10px] text-[#6e7d91] font-mono truncate">
-                          {agent.command}
-                        </div>
+
+                  {projects.map((proj) => (
+                    <div key={proj.id} className="border-b border-[#222a3a]/60 last:border-b-0 py-1">
+                      <div className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold text-white bg-[#131720]">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: proj.color || '#3dd6c6' }}
+                        />
+                        <span className="truncate flex-1">{proj.name}</span>
+                        <span className="text-[9px] text-[#6e7d91] font-mono truncate max-w-[80px]">
+                          {proj.cwd.split(/[\\/]/).pop()}
+                        </span>
                       </div>
-                    </button>
+
+                      {/* Top Agents */}
+                      {agents.slice(0, 4).map((agent) => (
+                        <button
+                          key={`${proj.id}-${agent.id}`}
+                          onClick={async () => {
+                            setIsAgentMenuOpen(false)
+                            await createSession({
+                              projectId: proj.id,
+                              agentId: agent.id,
+                              cwd: proj.cwd
+                            })
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-1 text-xs text-[#cfd6e0] hover:bg-[#222a3a] hover:text-white text-left transition"
+                        >
+                          <span
+                            className="w-4 h-4 rounded flex items-center justify-center font-bold text-[9px] text-black"
+                            style={{ backgroundColor: agent.color || '#3dd6c6' }}
+                          >
+                            {agent.icon || agent.name.slice(0, 2)}
+                          </span>
+                          <span className="text-xs truncate flex-1">{agent.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   ))}
+
                   <div className="border-t border-[#273144] my-1" />
                   <button
                     onClick={() => {
                       setIsAgentMenuOpen(false)
                       setNewSessionModal(true)
                     }}
-                    className="w-full px-3 py-1.5 text-xs text-[#3dd6c6] hover:bg-[#222a3a] text-left"
+                    className="w-full px-3 py-2 text-xs text-[#3dd6c6] font-medium hover:bg-[#222a3a] text-left flex items-center gap-1.5"
                   >
-                    + Comando customizado...
+                    <Plus size={13} />
+                    <span>Escolher Agente / Projeto completo...</span>
                   </button>
                 </div>
               </>

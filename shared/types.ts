@@ -84,6 +84,7 @@ export interface WorkspaceState {
   openProjectIds: string[]
   activeProjectId: string | null
   focusedSessionId: string | null
+  layout?: LayoutState
 }
 
 export interface DataPacket {

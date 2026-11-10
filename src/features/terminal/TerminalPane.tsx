@@ -30,6 +30,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const {
+    projects,
     agents,
     closeSession,
     deleteSession,
@@ -42,6 +43,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [copied, setCopied] = useState(false)
   const [detectedModel, setDetectedModel] = useState<string | null>(null)
+  const project = projects.find((p) => p.id === session.projectId)
 
   const agent = agents.find((a) => a.id === session.agentId)
   const isFocused = workspace.focusedSessionId === session.id
@@ -155,6 +157,22 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
       {/* Session Titlebar */}
       <div className="h-8 bg-[#151922] border-b border-[#1e2330] flex items-center justify-between px-2 text-xs select-none gap-2">
         <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+          {/* Project Pill */}
+          {project && (
+            <span
+              className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-semibold border flex-shrink-0"
+              style={{
+                backgroundColor: `${project.color || '#3dd6c6'}20`,
+                borderColor: `${project.color || '#3dd6c6'}50`,
+                color: project.color || '#3dd6c6'
+              }}
+              title={`Projeto: ${project.name}\nPasta: ${session.cwd}`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: project.color || '#3dd6c6' }} />
+              <span className="truncate max-w-[110px]">{project.name}</span>
+            </span>
+          )}
+
           {/* Agent Pill */}
           <span
             className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border flex-shrink-0"

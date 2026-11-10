@@ -7,7 +7,8 @@ import {
   Terminal as TerminalIcon,
   Trash2,
   Edit2,
-  FolderOpen
+  FolderOpen,
+  Plus
 } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { ipc } from '../services/ipc'
@@ -17,11 +18,14 @@ export const Sidebar: React.FC = () => {
   const {
     projects,
     sessions,
+    agents,
     workspace,
     switchProject,
     setProjectModal,
     setAgentModal,
     setSettingsModal,
+    setNewSessionModal,
+    createSession,
     deleteProject
   } = useAppStore()
 
@@ -46,7 +50,11 @@ export const Sidebar: React.FC = () => {
     <aside className="w-64 bg-[#12161f] border-r border-[#1e2330] flex flex-col h-full select-none">
       {/* Brand Header */}
       <div className="h-12 border-b border-[#1e2330] flex items-center justify-between px-4">
-        <div className="flex items-center gap-2">
+        <div
+          onClick={() => switchProject('')}
+          className="flex items-center gap-2 cursor-pointer hover:opacity-90 transition"
+          title="Ver grade com todos os projetos"
+        >
           <TexugoIcon size={24} className="w-6 h-6 flex-shrink-0" />
           <span className="font-semibold text-sm tracking-wide text-white">Texugo</span>
         </div>
@@ -61,8 +69,9 @@ export const Sidebar: React.FC = () => {
 
       {/* Projects List */}
       <div className="flex-1 overflow-y-auto py-2 px-2 space-y-1">
-        <div className="px-2 py-1 text-[11px] font-semibold text-[#657385] uppercase tracking-wider">
-          Projetos ({projects.length})
+        <div className="px-2 py-1 text-[11px] font-semibold text-[#657385] uppercase tracking-wider flex items-center justify-between">
+          <span>Projetos ({projects.length})</span>
+          <span className="text-[10px] text-[#3dd6c6] font-normal lowercase">multijanelas</span>
         </div>
 
         {projects.length === 0 ? (
@@ -92,6 +101,7 @@ export const Sidebar: React.FC = () => {
                     ? 'bg-[#1e2536] text-white font-medium border-l-2 border-[#3dd6c6]'
                     : 'text-[#9ba7b6] hover:bg-[#181d29] hover:text-[#d0d7de]'
                 }`}
+                title={`Projeto: ${project.name}\nPasta: ${project.cwd}`}
               >
                 <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-1">
                   <div
@@ -114,25 +124,44 @@ export const Sidebar: React.FC = () => {
                   ) : null}
 
                   {/* Actions visible on hover */}
-                  <div className="opacity-0 group-hover:opacity-100 flex items-center transition-opacity">
+                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        const claudeAgent = agents.find((a) => a.command.includes('claude')) || agents[0]
+                        if (claudeAgent) {
+                          await createSession({
+                            projectId: project.id,
+                            agentId: claudeAgent.id,
+                            cwd: project.cwd
+                          })
+                        } else {
+                          setNewSessionModal(true)
+                        }
+                      }}
+                      title="Abrir novo terminal (Claude Code) nesta pasta"
+                      className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
+                    >
+                      <Plus size={13} />
+                    </button>
                     <button
                       onClick={(e) => handleOpenFolder(e, project.cwd)}
                       title="Abrir no Explorer"
-                      className="p-1 hover:text-white"
+                      className="p-1 hover:text-white text-[#8e9aa8]"
                     >
                       <FolderOpen size={12} />
                     </button>
                     <button
                       onClick={(e) => handleEditProject(e, project)}
                       title="Editar Projeto"
-                      className="p-1 hover:text-white"
+                      className="p-1 hover:text-white text-[#8e9aa8]"
                     >
                       <Edit2 size={12} />
                     </button>
                     <button
                       onClick={(e) => handleDeleteProject(e, project.id, project.name)}
                       title="Excluir Projeto"
-                      className="p-1 hover:text-red-400"
+                      className="p-1 hover:text-red-400 text-[#8e9aa8]"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -148,14 +177,14 @@ export const Sidebar: React.FC = () => {
       <div className="border-t border-[#1e2330] p-2 space-y-1">
         <button
           onClick={() => setAgentModal(true)}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
         >
           <Bot size={15} />
           <span>Perfis de Agentes</span>
         </button>
         <button
           onClick={() => setSettingsModal(true)}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
         >
           <SettingsIcon size={15} />
           <span>Configurações</span>

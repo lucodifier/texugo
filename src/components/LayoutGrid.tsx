@@ -3,6 +3,7 @@ import { Plus, Terminal as TerminalIcon } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { TerminalPane } from '../features/terminal/TerminalPane'
 import { TexugoIcon } from './TexugoIcon'
+import { emptyLayout } from '@shared/layout'
 import type { PresetId } from '@shared/types'
 
 export const LayoutGrid: React.FC = () => {
@@ -15,15 +16,14 @@ export const LayoutGrid: React.FC = () => {
     setProjectModal
   } = useAppStore()
 
-  const activeProject = projects.find((p) => p.id === workspace.activeProjectId)
-
-  if (!activeProject) {
+  // Empty state: no project created yet
+  if (projects.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#0c0e12] p-8 text-center select-none">
         <TexugoIcon size={64} className="w-16 h-16 mb-4 drop-shadow-[0_0_20px_rgba(61,214,198,0.25)]" />
         <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao Texugo</h2>
         <p className="text-sm text-[#6e7d91] max-w-md mb-6">
-          Gerenciador profissional para múltiplos agentes de programação e terminais reais no Windows.
+          Gerenciador profissional para múltiplos agentes de programação e projetos lado a lado no Windows.
         </p>
         <button
           onClick={() => setProjectModal(true)}
@@ -35,7 +35,16 @@ export const LayoutGrid: React.FC = () => {
     )
   }
 
-  const { layout } = activeProject
+  const activeProject = workspace.activeProjectId
+    ? projects.find((p) => p.id === workspace.activeProjectId)
+    : null
+
+  // If viewing a single project tab, use its layout. Otherwise use multi-project workspace layout!
+  const defaultPreset = sessions.length > 1 ? '2h' : '1'
+  const layout = activeProject
+    ? activeProject.layout
+    : workspace.layout || emptyLayout(defaultPreset)
+
   const { preset, slots, maximizedSessionId } = layout
 
   // Maximized terminal mode
