@@ -2,6 +2,7 @@ import React from 'react'
 import { Plus, Terminal as TerminalIcon } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { TerminalPane } from '../features/terminal/TerminalPane'
+import { TexugoIcon } from './TexugoIcon'
 import type { PresetId } from '@shared/types'
 
 export const LayoutGrid: React.FC = () => {
@@ -19,10 +20,8 @@ export const LayoutGrid: React.FC = () => {
   if (!activeProject) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-[#0c0e12] p-8 text-center select-none">
-        <div className="w-16 h-16 rounded-2xl bg-[#151922] border border-[#222a3a] flex items-center justify-center text-[#3dd6c6] mb-4 shadow-xl">
-          <TerminalIcon size={32} />
-        </div>
-        <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao Agent Desktop</h2>
+        <TexugoIcon size={64} className="w-16 h-16 mb-4 drop-shadow-[0_0_20px_rgba(61,214,198,0.25)]" />
+        <h2 className="text-xl font-bold text-white mb-2">Bem-vindo ao Texugo</h2>
         <p className="text-sm text-[#6e7d91] max-w-md mb-6">
           Gerenciador profissional para múltiplos agentes de programação e terminais reais no Windows.
         </p>

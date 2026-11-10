@@ -1,5 +1,5 @@
-appId: com.codeholistic.agentdesktop
-productName: Agent Desktop
+appId: com.codeholistic.texugo
+productName: Texugo
 copyright: Copyright © CodeHolistic
 directories:
   output: release
@@ -13,19 +13,19 @@ asarUnpack:
   - "**/*.node"
   - "**/node_modules/sql.js/**"
 win:
-  executableName: AgentDesktop
+  executableName: Texugo
   target:
     - target: nsis
       arch:
         - x64
   icon: build/icon.png
-  artifactName: AgentDesktop-Setup-${version}.${ext}
+  artifactName: Texugo-Setup-${version}.${ext}
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-  shortcutName: Agent Desktop
-  uninstallDisplayName: Agent Desktop
+  shortcutName: Texugo
+  uninstallDisplayName: Texugo
   createDesktopShortcut: true
   createStartMenuShortcut: true
   installerIcon: build/icon.ico

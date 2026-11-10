@@ -1,5 +1,5 @@
 {
-  "name": "agent-desktop",
+  "name": "texugo",
   "version": "0.1.0",
   "private": true,
   "description": "Gerenciador local de agentes de IA em terminais reais no Windows.",
@@ -50,5 +50,6 @@
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
     "vitest": "^3.0.7"
-  }
+  },
+  "productName": "Texugo"
 }

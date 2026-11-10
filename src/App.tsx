@@ -7,6 +7,7 @@ import { ProjectModal } from './features/projects/ProjectModal'
 import { AgentModal } from './features/agents/AgentModal'
 import { SettingsModal } from './features/settings/SettingsModal'
 import { NewSessionModal } from './features/sessions/NewSessionModal'
+import { TexugoIcon } from './components/TexugoIcon'
 import { useAppStore } from './stores/useAppStore'
 import { terminalRegistry } from './features/terminal/terminal-registry'
 
@@ -29,7 +30,7 @@ export const App: React.FC = () => {
         <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4">
           <AlertCircle size={24} />
         </div>
-        <h2 className="text-base font-semibold text-white mb-2">Erro ao inicializar Agent Desktop</h2>
+        <h2 className="text-base font-semibold text-white mb-2">Erro ao inicializar Texugo</h2>
         <p className="text-xs text-red-400/90 font-mono bg-[#161b24] p-3 rounded border border-red-500/20 max-w-lg text-center mb-4">
           {initError}
         </p>
@@ -50,8 +51,9 @@ export const App: React.FC = () => {
   if (!initialized) {
     return (
       <div className="flex flex-col items-center justify-center h-screen w-screen bg-[#0c0e12] text-white select-none">
-        <div className="w-8 h-8 border-2 border-[#3dd6c6] border-t-transparent rounded-full animate-spin mb-3" />
-        <span className="text-xs text-[#8e9aa8] font-mono">Inicializando Agent Desktop...</span>
+        <TexugoIcon size={56} className="w-14 h-14 mb-4 drop-shadow-[0_0_15px_rgba(61,214,198,0.3)] animate-pulse" />
+        <div className="w-7 h-7 border-2 border-[#3dd6c6] border-t-transparent rounded-full animate-spin mb-3" />
+        <span className="text-xs text-[#8e9aa8] font-mono tracking-wider">Inicializando Texugo...</span>
         <span className="text-[10px] text-[#556377] mt-3">Pressione F12 para ver o console se demorar</span>
       </div>
     )

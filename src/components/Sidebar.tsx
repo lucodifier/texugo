@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { ipc } from '../services/ipc'
+import { TexugoIcon } from './TexugoIcon'
 
 export const Sidebar: React.FC = () => {
   const {
@@ -46,10 +47,8 @@ export const Sidebar: React.FC = () => {
       {/* Brand Header */}
       <div className="h-12 border-b border-[#1e2330] flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-gradient-to-tr from-[#3dd6c6] to-[#7c9cff] flex items-center justify-center font-bold text-xs text-black">
-            AD
-          </div>
-          <span className="font-semibold text-sm tracking-wide text-white">Agent Desktop</span>
+          <TexugoIcon size={24} className="w-6 h-6 flex-shrink-0" />
+          <span className="font-semibold text-sm tracking-wide text-white">Texugo</span>
         </div>
         <button
           onClick={() => setProjectModal(true)}

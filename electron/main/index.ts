@@ -18,13 +18,17 @@ async function createWindow(database: AppDatabase, terminals: PtyManager): Promi
   const preloadCandidateJs = path.join(__dirname, '../preload/index.js')
   const preloadPath = fs.existsSync(preloadCandidateMjs) ? preloadCandidateMjs : preloadCandidateJs
 
+  const iconPng = path.join(app.getAppPath(), 'build/icon.png')
+  const icon = fs.existsSync(iconPng) ? iconPng : undefined
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 960,
     minHeight: 640,
     show: false,
-    title: 'Agent Desktop',
+    title: 'Texugo',
+    icon,
     backgroundColor: '#0c0e12',
     autoHideMenuBar: true,
     webPreferences: {
@@ -93,7 +97,7 @@ async function createWindow(database: AppDatabase, terminals: PtyManager): Promi
         buttons: ['Cancelar', 'Encerrar processos e sair'],
         defaultId: 0,
         cancelId: 0,
-        title: 'Agent Desktop',
+        title: 'Texugo',
         message: 'Há sessões em execução.',
         detail:
           'Sair encerra os processos destes terminais. O histórico visual fica salvo neste computador. Um processo preso ao ConPTY não continua depois que o aplicativo fecha; agentes compatíveis podem ser retomados pela CLI.'
