@@ -20,6 +20,20 @@ export interface TerminalEntry {
   onScrollStateChange?: (isAtBottom: boolean) => void
 }
 
+async function pasteFromClipboard(sessionId: string) {
+  let text = ''
+  try {
+    text = await navigator.clipboard.readText()
+  } catch {
+    try {
+      text = await ipc.readClipboard()
+    } catch {}
+  }
+  if (text) {
+    ipc.writeSession(sessionId, text)
+  }
+}
+
 class TerminalRegistry {
   private entries = new Map<string, TerminalEntry>()
   private settings: Settings | null = null
@@ -123,8 +137,66 @@ class TerminalRegistry {
 
     // Isolated wrapper element that stays alive across re-mounts
     const element = document.createElement('div')
-    element.className = 'w-full h-full'
+    element.className = 'w-full h-full select-text'
     term.open(element)
+
+    // Intercept keyboard copy / paste (Ctrl+C, Ctrl+V, Ctrl+Shift+C, Ctrl+Shift+V)
+    term.attachCustomKeyEventHandler((event: KeyboardEvent) => {
+      const isCtrlOrMeta = event.ctrlKey || event.metaKey
+
+      // Copy: Ctrl+C / Ctrl+Shift+C when text is selected
+      if (isCtrlOrMeta && (event.key === 'c' || event.key === 'C')) {
+        if (term.hasSelection()) {
+          const selected = term.getSelection()
+          if (selected) {
+            ipc.copyToClipboard(selected)
+          }
+          return false // Don't send \x03 to PTY when user is copying selected text
+        }
+        return true // No selection: send SIGINT to process
+      }
+
+      // Paste: Ctrl+V / Ctrl+Shift+V
+      if (isCtrlOrMeta && (event.key === 'v' || event.key === 'V')) {
+        if (event.type === 'keydown') {
+          pasteFromClipboard(sessionId)
+        }
+        return false // Don't send \x16 to PTY
+      }
+
+      return true
+    })
+
+    // Native paste listener for external tools (e.g., Wispr Flow, speech dictation, OS clipboard)
+    element.addEventListener('paste', (event: ClipboardEvent) => {
+      event.preventDefault()
+      event.stopPropagation()
+      const text = event.clipboardData?.getData('text')
+      if (text) {
+        ipc.writeSession(sessionId, text)
+      } else {
+        pasteFromClipboard(sessionId)
+      }
+    })
+
+    // Right-click paste (Windows Terminal style)
+    element.addEventListener('contextmenu', (event: MouseEvent) => {
+      event.preventDefault()
+      if (term.hasSelection()) {
+        const selected = term.getSelection()
+        if (selected) {
+          ipc.copyToClipboard(selected)
+          term.clearSelection()
+        }
+      } else {
+        pasteFromClipboard(sessionId)
+      }
+    })
+
+    // Focus terminal on click/mousedown
+    element.addEventListener('mousedown', () => {
+      term.focus()
+    })
 
     // Key handling to PTY
     term.onData((input) => {
@@ -173,6 +245,7 @@ class TerminalRegistry {
         try {
           entry.fitAddon.fit()
           this.syncDimensions(sessionId)
+          entry.term.focus()
         } catch {}
       })
     }

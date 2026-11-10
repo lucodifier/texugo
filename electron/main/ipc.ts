@@ -324,6 +324,10 @@ export function registerIpc(host: Host): void {
     return true
   })
 
+  handle('clipboard:read', () => {
+    return clipboard.readText()
+  })
+
   handle('git:info', async (payload) => inspectGit(assertDirectory((payload as { cwd: string }).cwd)))
 
   handle('git:worktrees', async (payload) => listWorktrees(assertDirectory((payload as { cwd: string }).cwd)))

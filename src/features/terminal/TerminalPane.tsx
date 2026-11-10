@@ -144,7 +144,10 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
 
   return (
     <div
-      onClick={() => focusSession(session.id)}
+      onClick={() => {
+        focusSession(session.id)
+        terminalRegistry.get(session.id)?.term.focus()
+      }}
       className={`flex flex-col h-full w-full bg-[#0c0e12] border rounded overflow-hidden relative transition-colors ${
         isFocused ? 'border-[#3dd6c6]/50 shadow-md ring-1 ring-[#3dd6c6]/20' : 'border-[#1e2330]'
       }`}

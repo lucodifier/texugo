@@ -90,6 +90,7 @@ export const ipc = {
   openPath: (target: string) => call<boolean>('shell:openPath', { target }),
   openExternal: (url: string) => call<boolean>('shell:openExternal', { url }),
   copyToClipboard: (text: string) => call<boolean>('clipboard:write', { text }),
+  readClipboard: () => call<string>('clipboard:read'),
 
   // Listeners
   onData: (cb: (packet: DataPacket) => void) => {
