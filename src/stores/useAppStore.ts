@@ -21,6 +21,7 @@ import { ipc } from '../services/ipc'
 
 interface AppState {
   initialized: boolean
+  initError: string | null
   projects: Project[]
   sessions: SessionRecord[]
   agents: AgentProfile[]
@@ -78,6 +79,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   initialized: false,
+  initError: null,
   projects: [],
   sessions: [],
   agents: [],
@@ -93,9 +95,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   init: async () => {
     try {
+      set({ initError: null })
       const data = await ipc.bootstrap()
       set({
         initialized: true,
+        initError: null,
         projects: data.projects,
         sessions: data.sessions,
         agents: data.agents,
@@ -109,8 +113,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       ipc.onStatus((packet) => {
         get().handleStatusUpdate(packet)
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error('Falha ao inicializar Agent Desktop:', err)
+      set({ initError: err?.message || String(err) })
     }
   },
 

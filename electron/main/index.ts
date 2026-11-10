@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import { app, BrowserWindow, dialog, shell } from 'electron'
 import { registerIpc } from './ipc'
@@ -13,6 +14,10 @@ let allowQuit = false
 const isDev = Boolean(process.env.ELECTRON_RENDERER_URL)
 
 async function createWindow(database: AppDatabase, terminals: PtyManager): Promise<void> {
+  const preloadCandidateMjs = path.join(__dirname, '../preload/index.mjs')
+  const preloadCandidateJs = path.join(__dirname, '../preload/index.js')
+  const preloadPath = fs.existsSync(preloadCandidateMjs) ? preloadCandidateMjs : preloadCandidateJs
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -23,15 +28,22 @@ async function createWindow(database: AppDatabase, terminals: PtyManager): Promi
     backgroundColor: '#0c0e12',
     autoHideMenuBar: true,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.js'),
+      preload: preloadPath,
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: true,
+      sandbox: false,
       spellcheck: false,
       backgroundThrottling: false
     }
   })
   mainWindow.webContents.setBackgroundThrottling(false)
+
+  // DevTools shortcut: F12
+  mainWindow.webContents.on('before-input-event', (_event, input) => {
+    if (input.key === 'F12' && input.type === 'keyDown') {
+      mainWindow?.webContents.toggleDevTools()
+    }
+  })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('https:') || url.startsWith('http:')) shell.openExternal(url)
