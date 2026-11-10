@@ -30,4 +30,4 @@ nsis:
   createStartMenuShortcut: true
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
-npmRebuild: true
+npmRebuild: false
