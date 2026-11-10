@@ -292,13 +292,15 @@ export function registerIpc(host: Host): void {
     return settings
   })
 
-  handle('dialog:directory', async () => {
+  const pickDirHandler = async () => {
     const window = host.getWindow()
     const result = window
       ? await dialog.showOpenDialog(window, { properties: ['openDirectory'] })
       : await dialog.showOpenDialog({ properties: ['openDirectory'] })
     return result.canceled ? null : result.filePaths[0] ?? null
-  })
+  }
+  handle('dialog:directory', pickDirHandler)
+  handle('dialog:pick-directory', pickDirHandler)
 
   handle('shell:openPath', async (payload) => {
     const { target } = payload as { target: string }

@@ -78,17 +78,17 @@ export const ipc = {
   updateSettings: (settings: Partial<Settings>) => call<Settings>('settings:update', settings),
 
   // Git
-  inspectGit: (cwd: string) => call<GitInfo>('git:inspect', { cwd }),
-  listWorktrees: (cwd: string) => call<GitWorktree[]>('git:worktrees:list', { cwd }),
+  inspectGit: (cwd: string) => call<GitInfo>('git:info', { cwd }),
+  listWorktrees: (cwd: string) => call<GitWorktree[]>('git:worktrees', { cwd }),
   addWorktree: (cwd: string, branch: string, path: string) =>
-    call<boolean>('git:worktrees:add', { cwd, branch, path }),
+    call<boolean>('git:addWorktree', { repoCwd: cwd, branch, targetPath: path }),
   removeWorktree: (cwd: string, worktreePath: string) =>
-    call<boolean>('git:worktrees:remove', { cwd, worktreePath }),
+    call<boolean>('git:removeWorktree', { repoCwd: cwd, targetPath: worktreePath, force: false }),
 
   // System
-  pickDirectory: (defaultPath?: string) => call<string | null>('dialog:pick-directory', { defaultPath }),
-  openPath: (targetPath: string) => call<boolean>('system:open-path', { targetPath }),
-  openExternal: (url: string) => call<boolean>('system:open-external', { url }),
+  pickDirectory: () => call<string | null>('dialog:directory'),
+  openPath: (target: string) => call<boolean>('shell:openPath', { target }),
+  openExternal: (url: string) => call<boolean>('shell:openExternal', { url }),
   copyToClipboard: (text: string) => call<boolean>('clipboard:write', { text }),
 
   // Listeners
