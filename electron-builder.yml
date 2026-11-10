@@ -1,0 +1,33 @@
+appId: com.codeholistic.agentdesktop
+productName: Agent Desktop
+copyright: Copyright © CodeHolistic
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+extraMetadata:
+  main: out/main/index.js
+asarUnpack:
+  - "**/*.node"
+  - "**/node_modules/sql.js/**"
+win:
+  executableName: AgentDesktop
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.png
+  artifactName: AgentDesktop-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Agent Desktop
+  uninstallDisplayName: Agent Desktop
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+npmRebuild: true
