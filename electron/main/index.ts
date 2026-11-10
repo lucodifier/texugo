@@ -68,6 +68,9 @@ async function createWindow(database: AppDatabase, terminals: PtyManager): Promi
   }
 
   mainWindow.on('ready-to-show', () => mainWindow?.show())
+  mainWindow.on('closed', () => {
+    mainWindow = null
+  })
   mainWindow.on('close', (event) => {
     if (allowQuit) return
     const settings = database.getSettings(app.getPath('home'))
@@ -93,6 +96,7 @@ async function createWindow(database: AppDatabase, terminals: PtyManager): Promi
         allowQuit = true
         terminals.shutdownAll()
         mainWindow?.destroy()
+        mainWindow = null
         app.quit()
       })
   })
@@ -111,7 +115,12 @@ app.whenReady().then(async () => {
   database.markOrphansExited()
   const terminals = new PtyManager(
     (sessionId, seq, data) => {
-      mainWindow?.webContents.send('terminal:data', { sessionId, seq, data })
+      try {
+        if (!mainWindow || mainWindow.isDestroyed()) return
+        const contents = mainWindow.webContents
+        if (!contents || contents.isDestroyed()) return
+        contents.send('terminal:data', { sessionId, seq, data })
+      } catch {}
     },
     (live) => {
       const session = database.getSession(live.id)
@@ -125,15 +134,20 @@ app.whenReady().then(async () => {
         session.updatedAt = Date.now()
         database.updateSession(session)
       }
-      mainWindow?.webContents.send('terminal:status', {
-        sessionId: live.id,
-        status: live.status,
-        exitCode: live.exitCode,
-        closeReason: live.closeReason,
-        attention: live.attention,
-        pid: live.pid,
-        externalSessionId: live.externalSessionId
-      })
+      try {
+        if (!mainWindow || mainWindow.isDestroyed()) return
+        const contents = mainWindow.webContents
+        if (!contents || contents.isDestroyed()) return
+        contents.send('terminal:status', {
+          sessionId: live.id,
+          status: live.status,
+          exitCode: live.exitCode,
+          closeReason: live.closeReason,
+          attention: live.attention,
+          pid: live.pid,
+          externalSessionId: live.externalSessionId
+        })
+      } catch {}
     }
   )
   registerIpc({
