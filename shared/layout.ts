@@ -10,11 +10,20 @@ export interface PresetSpec {
 
 export const PRESETS: Record<PresetId, PresetSpec> = {
   '1': { id: '1', label: '1 painel', cols: 1, rows: 1, count: 1 },
-  '2h': { id: '2h', label: '2 horizontais', cols: 1, rows: 2, count: 2 },
-  '2v': { id: '2v', label: '2 verticais', cols: 2, rows: 1, count: 2 },
+  '2h': { id: '2h', label: '2 horizontais', cols: 2, rows: 1, count: 2 },
+  '2v': { id: '2v', label: '2 verticais', cols: 1, rows: 2, count: 2 },
   '4': { id: '4', label: '4 painéis', cols: 2, rows: 2, count: 4 },
   '6': { id: '6', label: '6 painéis', cols: 3, rows: 2, count: 6 },
   '8': { id: '8', label: '8 painéis', cols: 4, rows: 2, count: 8 }
+}
+
+const NEXT_PRESET: Record<PresetId, PresetId> = {
+  '1': '2h',
+  '2h': '4',
+  '2v': '4',
+  '4': '6',
+  '6': '8',
+  '8': '8'
 }
 
 export function emptyLayout(preset: PresetId = '1'): LayoutState {
@@ -78,43 +87,45 @@ export function setPreset(layout: LayoutState, preset: PresetId, sessionIds: str
 }
 
 export function placeSession(layout: LayoutState, sessionId: string, sessionIds: string[]): LayoutState {
-  const base = normalizeLayout(layout, sessionIds.filter((id) => id !== sessionId).concat(sessionId))
-  const without = unique(
-    [...base.slots.filter((id): id is string => !!id && id !== sessionId), ...base.overflow.filter((id) => id !== sessionId)]
-  )
-  const emptyIndex = base.slots.findIndex((id) => id === null || id === sessionId)
-  const slots = base.slots.map((id) => (id === sessionId ? null : id))
-  if (emptyIndex >= 0) slots[emptyIndex] = sessionId
-  const overflow = unique([...slots.filter((id): id is string => !!id), sessionId, ...without]).filter(
-    (id) => !slots.includes(id)
-  )
-  const placed = slots.includes(sessionId)
-  return normalizeLayout(
-    {
-      ...base,
-      slots: placed ? slots : base.slots,
-      overflow: placed ? overflow : [sessionId, ...base.overflow.filter((id) => id !== sessionId)]
-    },
-    sessionIds.includes(sessionId) ? sessionIds : [...sessionIds, sessionId]
-  )
+  return focusSessionInLayout(layout, sessionId, sessionIds)
 }
 
 export function focusSessionInLayout(layout: LayoutState, sessionId: string, sessionIds: string[]): LayoutState {
-  const normalized = normalizeLayout(layout, sessionIds)
+  let normalized = normalizeLayout(layout, sessionIds)
   if (normalized.slots.includes(sessionId)) {
-    return { ...normalized, maximizedSessionId: normalized.maximizedSessionId }
+    return { ...normalized, maximizedSessionId: null }
   }
+
+  // If all current slots are full and we can expand, auto-expand to next preset
+  const emptyInCurrent = normalized.slots.findIndex((id) => id === null)
+  if (emptyInCurrent < 0 && normalized.preset !== '8') {
+    const nextPreset = NEXT_PRESET[normalized.preset]
+    normalized = normalizeLayout({ ...normalized, preset: nextPreset }, sessionIds)
+    if (normalized.slots.includes(sessionId)) {
+      return { ...normalized, maximizedSessionId: null }
+    }
+  }
+
   const slots = [...normalized.slots]
   const empty = slots.findIndex((id) => id === null)
   if (empty >= 0) {
     slots[empty] = sessionId
-  } else if (slots.length > 0) {
-    const displaced = slots[0]
-    slots[0] = sessionId
-    const overflow = unique([displaced, ...normalized.overflow].filter((id): id is string => !!id && id !== sessionId))
-    return normalizeLayout({ ...normalized, slots, overflow }, sessionIds)
+    return {
+      ...normalized,
+      slots,
+      maximizedSessionId: null
+    }
   }
-  return normalizeLayout({ ...normalized, slots }, sessionIds)
+
+  const displaced = slots[0]
+  slots[0] = sessionId
+  const overflow = unique([displaced, ...normalized.overflow].filter((id): id is string => !!id && id !== sessionId))
+  return {
+    ...normalized,
+    slots,
+    overflow,
+    maximizedSessionId: null
+  }
 }
 
 export function removeSessionFromLayout(layout: LayoutState, sessionId: string, sessionIds: string[]): LayoutState {

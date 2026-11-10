@@ -62,26 +62,40 @@ function existingFile(candidate: string): string | null {
 
 export function resolveExecutable(command: string, searchDirs: string[]): { file: string; kind: 'exe' | 'cmd' | 'ps1' } {
   const hasDir = /[\\/]/.test(command)
-  const extensions = ['', '.exe', '.cmd', '.bat', '.ps1']
-  const bases = hasDir ? [command] : searchDirs.map((dir) => path.join(dir, command))
-  const preferred: { file: string; kind: 'exe' | 'cmd' | 'ps1' }[] = []
-  for (const base of bases) {
-    const ext = path.extname(base).toLowerCase()
-    const candidates = ext ? [base] : extensions.map((item) => (item ? base + item : base))
-    for (const candidate of candidates) {
-      const file = existingFile(candidate)
-      if (!file) continue
-      const foundExt = path.extname(file).toLowerCase()
-      const kind = foundExt === '.cmd' || foundExt === '.bat' ? 'cmd' : foundExt === '.ps1' ? 'ps1' : 'exe'
-      preferred.push({ file, kind })
+  const ext = path.extname(command).toLowerCase()
+
+  if (['.exe', '.cmd', '.bat', '.ps1'].includes(ext)) {
+    const bases = hasDir ? [command] : searchDirs.map((dir) => path.join(dir, command))
+    for (const base of bases) {
+      const file = existingFile(base)
+      if (file) {
+        const kind = ext === '.cmd' || ext === '.bat' ? 'cmd' : ext === '.ps1' ? 'ps1' : 'exe'
+        return { file, kind }
+      }
     }
   }
-  const exe = preferred.find((item) => item.kind === 'exe')
-  if (exe) return exe
-  const cmd = preferred.find((item) => item.kind === 'cmd')
-  if (cmd) return cmd
-  const ps1 = preferred.find((item) => item.kind === 'ps1')
-  if (ps1) return ps1
+
+  // Windows priority order: .exe, .cmd, .bat, .ps1
+  // Never pick extensionless shell scripts on Windows
+  const extensions = ['.exe', '.cmd', '.bat', '.ps1']
+  const bases = hasDir ? [command] : searchDirs.map((dir) => path.join(dir, command))
+
+  for (const extCandidate of extensions) {
+    for (const base of bases) {
+      const candidate = base + extCandidate
+      const file = existingFile(candidate)
+      if (file) {
+        const kind = extCandidate === '.cmd' || extCandidate === '.bat' ? 'cmd' : extCandidate === '.ps1' ? 'ps1' : 'exe'
+        return { file, kind }
+      }
+    }
+  }
+
+  if (hasDir) {
+    const file = existingFile(command)
+    if (file) return { file, kind: 'exe' }
+  }
+
   throw new Error(
     `Não encontrei o executável "${command}". Confira se ele está instalado e visível no PATH do Windows.`
   )

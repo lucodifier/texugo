@@ -8,17 +8,19 @@ import {
   Columns,
   Rows,
   Grid,
-  ChevronDown
+  ChevronDown,
+  Bot
 } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { ipc } from '../services/ipc'
-import type { GitInfo, PresetId } from '@shared/types'
+import type { AgentProfile, GitInfo, PresetId } from '@shared/types'
 
 export const Header: React.FC = () => {
   const {
     projects,
     workspace,
     agents,
+    sessions,
     switchProject,
     closeProjectTab,
     setLayoutPreset,
@@ -166,6 +168,34 @@ export const Header: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* Active Models / Agents in Project */}
+        {activeProject && (() => {
+          const projectSessions = sessions.filter(
+            (s) => s.projectId === activeProject.id && (s.status === 'running' || s.status === 'starting')
+          )
+          const activeAgentIds = [...new Set(projectSessions.map((s) => s.agentId).filter(Boolean))]
+          const activeList = activeAgentIds.map((id) => agents.find((a) => a.id === id)).filter(Boolean) as AgentProfile[]
+
+          if (activeList.length === 0) return null
+
+          return (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#181d29] border border-[#222a3a] text-[11px]" title="Modelos/Agentes em execução neste projeto">
+              <Bot size={13} className="text-[#3dd6c6]" />
+              <div className="flex items-center gap-1">
+                {activeList.map((ag) => (
+                  <span
+                    key={ag.id}
+                    className="px-1.5 py-0.5 rounded text-[10px] font-medium"
+                    style={{ backgroundColor: `${ag.color}25`, color: ag.color }}
+                  >
+                    {ag.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Layout Presets */}
         {activeProject && (

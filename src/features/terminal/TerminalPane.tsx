@@ -9,7 +9,8 @@ import {
   Folder,
   ArrowDown,
   Terminal as TerminalIcon,
-  Check
+  Check,
+  Bot
 } from 'lucide-react'
 import type { SessionRecord } from '@shared/types'
 import { useAppStore } from '../../stores/useAppStore'
@@ -34,17 +35,39 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
     deleteSession,
     restartSession,
     resumeSession,
-    duplicateSession,
     focusSession,
     workspace
   } = useAppStore()
 
   const [isAtBottom, setIsAtBottom] = useState(true)
   const [copied, setCopied] = useState(false)
-  const [isHovered, setIsHovered] = useState(false)
+  const [detectedModel, setDetectedModel] = useState<string | null>(null)
 
   const agent = agents.find((a) => a.id === session.agentId)
   const isFocused = workspace.focusedSessionId === session.id
+
+  const extractModel = (text: string) => {
+    if (!text) return
+    const match = text.match(/\b(Sonnet[\s0-9.]+|Opus[\s0-9.]+|Haiku[\s0-9.]+|Claude\s+[0-9.]+\s+[A-Za-z]+|gpt-[0-9a-z.-]+|o1-[a-z]+|o3-[a-z]+|gemini-[0-9a-z.-]+)\b/i)
+    if (match && match[1]) {
+      setDetectedModel(match[1].trim())
+    }
+  }
+
+  useEffect(() => {
+    // Initial check from transcript
+    ipc.tailTranscript(session.id, 8000).then((text) => {
+      extractModel(text)
+    }).catch(() => {})
+
+    // Stream listener
+    const unsub = ipc.onData(({ sessionId, data }) => {
+      if (sessionId === session.id) {
+        extractModel(data)
+      }
+    })
+    return () => unsub()
+  }, [session.id])
 
   useEffect(() => {
     if (!containerRef.current) return
@@ -94,26 +117,26 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
     switch (session.status) {
       case 'running':
         return (
-          <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-mono">
+          <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             executando
           </span>
         )
       case 'starting':
         return (
-          <span className="flex items-center gap-1 text-[11px] text-sky-400 font-mono">
+          <span className="flex items-center gap-1 text-[10px] text-sky-400 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
             iniciando
           </span>
         )
       case 'exited':
         return (
-          <span className="text-[11px] text-[#6e7d91] font-mono">
+          <span className="text-[10px] text-[#6e7d91] font-mono">
             encerrado {session.exitCode !== null ? `(${session.exitCode})` : ''}
           </span>
         )
       case 'error':
-        return <span className="text-[11px] text-red-400 font-mono">erro</span>
+        return <span className="text-[10px] text-red-400 font-mono font-medium">erro</span>
       default:
         return null
     }
@@ -122,23 +145,34 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
   return (
     <div
       onClick={() => focusSession(session.id)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       className={`flex flex-col h-full w-full bg-[#0c0e12] border rounded overflow-hidden relative transition-colors ${
-        isFocused ? 'border-[#3dd6c6]/50 shadow-md' : 'border-[#1e2330]'
+        isFocused ? 'border-[#3dd6c6]/50 shadow-md ring-1 ring-[#3dd6c6]/20' : 'border-[#1e2330]'
       }`}
     >
       {/* Session Titlebar */}
-      <div className="h-8 bg-[#151922] border-b border-[#1e2330] flex items-center justify-between px-2 text-xs select-none">
-        <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-2">
-          {/* Agent Badge */}
+      <div className="h-8 bg-[#151922] border-b border-[#1e2330] flex items-center justify-between px-2 text-xs select-none gap-2">
+        <div className="flex items-center gap-2 truncate flex-1 min-w-0">
+          {/* Agent Pill */}
           <span
-            className="w-4 h-4 rounded flex items-center justify-center font-bold text-[9px] text-black flex-shrink-0"
-            style={{ backgroundColor: agent?.color || '#3dd6c6' }}
-            title={agent?.name || 'Comando'}
+            className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border flex-shrink-0"
+            style={{
+              backgroundColor: `${agent?.color || '#3dd6c6'}15`,
+              borderColor: `${agent?.color || '#3dd6c6'}40`,
+              color: agent?.color || '#3dd6c6'
+            }}
+            title={agent?.command}
           >
-            {agent?.icon || session.command.slice(0, 2).toUpperCase()}
+            <span className="font-bold">{agent?.icon || session.command.slice(0, 2).toUpperCase()}</span>
+            <span>{agent?.name || session.command}</span>
           </span>
+
+          {/* Model Tag if detected */}
+          {detectedModel && (
+            <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono flex items-center gap-1 flex-shrink-0" title="Modelo ativo detectado">
+              <Bot size={11} />
+              <span>{detectedModel}</span>
+            </span>
+          )}
 
           {/* Session Name */}
           <span className="font-medium text-white truncate text-xs">{session.name}</span>
@@ -157,13 +191,13 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
         </div>
 
         {/* Toolbar Actions */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {/* Resume (if exited & supported) */}
           {session.status === 'exited' && session.resumeKind !== 'none' && (
             <button
               onClick={() => resumeSession(session.id)}
               className="p-1 rounded text-[#3dd6c6] hover:bg-[#222a3a]"
-              title={`Retomar sessão (${session.resumeKind})`}
+              title={`Retomar conversa (${session.resumeKind})`}
             >
               <Play size={12} />
             </button>

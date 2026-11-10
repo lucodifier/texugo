@@ -29,13 +29,23 @@ describe('Layout Engine', () => {
     expect(next.slots[1]).toBeNull()
   })
 
+  it('auto-expands preset when adding session to full layout', () => {
+    let layout = emptyLayout('1')
+    layout = focusSessionInLayout(layout, 's1', ['s1'])
+    expect(layout.slots).toEqual(['s1'])
+
+    // Adding second session auto-expands to 2h
+    layout = focusSessionInLayout(layout, 's2', ['s1', 's2'])
+    expect(layout.preset).toBe('2h')
+    expect(layout.slots).toEqual(['s1', 's2'])
+  })
+
   it('handles multiple sessions filling slots and overflowing gracefully', () => {
     let layout = emptyLayout('2h')
     layout = focusSessionInLayout(layout, 's1', ['s1'])
     layout = focusSessionInLayout(layout, 's2', ['s1', 's2'])
     expect(layout.slots).toEqual(['s1', 's2'])
 
-    // Adding 3rd session when only 2 slots exist should place it in slot 0 or overflow
     layout = focusSessionInLayout(layout, 's3', ['s1', 's2', 's3'])
     expect(layout.slots.includes('s3')).toBe(true)
   })
