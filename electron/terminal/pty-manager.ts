@@ -51,6 +51,7 @@ interface Runtime extends LiveSession {
 
 export class PtyManager {
   private sessions = new Map<string, Runtime>()
+  private isShuttingDown = false
   readonly windowsBuild: number
 
   constructor(
@@ -158,7 +159,7 @@ export class PtyManager {
       }
       this.push(runtime, `\r\n[processo encerrado com código ${exitCode}]\r\n`)
       runtime.log.close()
-      this.emitStatus(publicView(runtime))
+      if (!this.isShuttingDown) this.emitStatus(publicView(runtime))
     })
     return publicView(runtime)
   }
@@ -200,6 +201,7 @@ export class PtyManager {
   }
 
   shutdownAll(): void {
+    this.isShuttingDown = true
     for (const id of this.runningIds()) this.shutdown(id, 'app-quit')
   }
 
@@ -236,7 +238,7 @@ export class PtyManager {
       session.attention = attention
       this.emitStatus(publicView(session))
     }
-    this.emitData(session.id, session.seq, data)
+    if (!this.isShuttingDown) this.emitData(session.id, session.seq, data)
   }
 }
 

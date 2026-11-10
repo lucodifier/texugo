@@ -11,6 +11,13 @@ if (!gotLock) app.quit()
 let mainWindow: BrowserWindow | null = null
 let allowQuit = false
 
+process.on('uncaughtException', (err) => {
+  if (err?.message?.includes('Object has been destroyed') || err?.message?.includes('Render frame was disposed')) {
+    return
+  }
+  console.error('[Texugo] Uncaught Exception:', err)
+})
+
 const isDev = Boolean(process.env.ELECTRON_RENDERER_URL)
 
 async function createWindow(database: AppDatabase, terminals: PtyManager): Promise<void> {
@@ -127,7 +134,7 @@ app.whenReady().then(async () => {
   const terminals = new PtyManager(
     (sessionId, seq, data) => {
       try {
-        if (!mainWindow || mainWindow.isDestroyed()) return
+        if (allowQuit || !mainWindow || mainWindow.isDestroyed()) return
         const contents = mainWindow.webContents
         if (!contents || contents.isDestroyed()) return
         contents.send('terminal:data', { sessionId, seq, data })
@@ -146,7 +153,7 @@ app.whenReady().then(async () => {
         database.updateSession(session)
       }
       try {
-        if (!mainWindow || mainWindow.isDestroyed()) return
+        if (allowQuit || !mainWindow || mainWindow.isDestroyed()) return
         const contents = mainWindow.webContents
         if (!contents || contents.isDestroyed()) return
         contents.send('terminal:status', {
