@@ -328,6 +328,17 @@ export function registerIpc(host: Host): void {
     return clipboard.readText()
   })
 
+  ipcMain.on('clipboard:read-sync', (event) => {
+    event.returnValue = clipboard.readText()
+  })
+
+  ipcMain.on('clipboard:write-sync', (event, text) => {
+    if (typeof text === 'string') {
+      clipboard.writeText(text)
+    }
+    event.returnValue = true
+  })
+
   handle('git:info', async (payload) => inspectGit(assertDirectory((payload as { cwd: string }).cwd)))
 
   handle('git:worktrees', async (payload) => listWorktrees(assertDirectory((payload as { cwd: string }).cwd)))

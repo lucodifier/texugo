@@ -20,6 +20,8 @@ type IpcResponse<T> = { ok: true; data: T } | { ok: false; error: string }
 interface WindowAgentDesktop {
   invoke: (channel: string, payload?: unknown) => Promise<IpcResponse<unknown>>
   on: (channel: string, callback: (payload: unknown) => void) => () => void
+  readClipboard?: () => string
+  writeClipboard?: (text: string) => boolean
 }
 
 declare global {
@@ -89,8 +91,23 @@ export const ipc = {
   pickDirectory: () => call<string | null>('dialog:directory'),
   openPath: (target: string) => call<boolean>('shell:openPath', { target }),
   openExternal: (url: string) => call<boolean>('shell:openExternal', { url }),
-  copyToClipboard: (text: string) => call<boolean>('clipboard:write', { text }),
-  readClipboard: () => call<string>('clipboard:read'),
+  copyToClipboard: async (text: string) => {
+    try {
+      if (window.agentDesktop?.writeClipboard) {
+        window.agentDesktop.writeClipboard(text)
+        return true
+      }
+    } catch {}
+    return call<boolean>('clipboard:write', { text })
+  },
+  readClipboard: async () => {
+    try {
+      if (window.agentDesktop?.readClipboard) {
+        return window.agentDesktop.readClipboard()
+      }
+    } catch {}
+    return call<string>('clipboard:read')
+  },
 
   // Listeners
   onData: (cb: (packet: DataPacket) => void) => {

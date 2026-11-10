@@ -8,9 +8,9 @@
   "main": "out/main/index.js",
   "scripts": {
     "postinstall": "node scripts/patch-node-pty.mjs",
-    "predev": "node scripts/patch-node-pty.mjs && electron-rebuild -f -w node-pty",
+    "predev": "node scripts/ensure-electron-pty.mjs",
     "dev": "electron-vite dev",
-    "prebuild": "node scripts/patch-node-pty.mjs && electron-rebuild -f -w node-pty",
+    "prebuild": "node scripts/ensure-electron-pty.mjs",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "test": "node scripts/ensure-node-pty.mjs && vitest run",

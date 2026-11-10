@@ -38,6 +38,13 @@ async function createWindow(database: AppDatabase, terminals: PtyManager): Promi
   })
   mainWindow.webContents.setBackgroundThrottling(false)
 
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission === 'clipboard-read' || permission === 'clipboard-sanitized-write') {
+      return callback(true)
+    }
+    callback(true)
+  })
+
   // DevTools shortcut: F12
   mainWindow.webContents.on('before-input-event', (_event, input) => {
     if (input.key === 'F12' && input.type === 'keyDown') {

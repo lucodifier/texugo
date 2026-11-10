@@ -20,18 +20,64 @@ export interface TerminalEntry {
   onScrollStateChange?: (isAtBottom: boolean) => void
 }
 
-async function pasteFromClipboard(sessionId: string) {
-  let text = ''
-  try {
-    text = await navigator.clipboard.readText()
-  } catch {
+/**
+ * Pastes text through xterm.js (handles bracketed paste mode, CRLF, and emits onData)
+ */
+function pasteToTerminal(term: Terminal, sessionId: string, text?: string) {
+  let toPaste = text
+
+  // If text is not provided, read synchronously from clipboard
+  if (toPaste === undefined) {
     try {
-      text = await ipc.readClipboard()
+      if (window.agentDesktop?.readClipboard) {
+        toPaste = window.agentDesktop.readClipboard()
+      }
     } catch {}
+
+    if (!toPaste) {
+      // Async fallback to navigator.clipboard if synchronous was empty
+      navigator.clipboard
+        ?.readText()
+        .then((asyncText) => {
+          if (asyncText) {
+            pasteToTerminal(term, sessionId, asyncText)
+          }
+        })
+        .catch(() => {})
+      return
+    }
   }
-  if (text) {
-    ipc.writeSession(sessionId, text)
+
+  if (!toPaste) return
+
+  try {
+    term.paste(toPaste)
+  } catch {
+    // Direct PTY write fallback
+    ipc.writeSession(sessionId, toPaste)
   }
+}
+
+/**
+ * Copies the currently selected terminal text to the clipboard
+ */
+function copySelection(term: Terminal): boolean {
+  if (term.hasSelection()) {
+    const selected = term.getSelection()
+    if (selected) {
+      try {
+        if (window.agentDesktop?.writeClipboard) {
+          window.agentDesktop.writeClipboard(selected)
+        } else {
+          navigator.clipboard?.writeText(selected).catch(() => {})
+        }
+      } catch {
+        ipc.copyToClipboard(selected)
+      }
+      return true
+    }
+  }
+  return false
 }
 
 class TerminalRegistry {
@@ -140,67 +186,83 @@ class TerminalRegistry {
     element.className = 'w-full h-full select-text'
     term.open(element)
 
-    // Intercept keyboard copy / paste (Ctrl+C, Ctrl+V, Ctrl+Shift+C, Ctrl+Shift+V)
+    // Forward terminal keypresses to PTY
+    term.onData((input) => {
+      ipc.writeSession(sessionId, input)
+    })
+
+    // Custom Key Event Handler: Copy / Paste shortcuts
     term.attachCustomKeyEventHandler((event: KeyboardEvent) => {
       const isCtrlOrMeta = event.ctrlKey || event.metaKey
+      const key = event.key.toLowerCase()
 
-      // Copy: Ctrl+C / Ctrl+Shift+C when text is selected
-      if (isCtrlOrMeta && (event.key === 'c' || event.key === 'C')) {
+      // Copy: Ctrl+C / Ctrl+Shift+C / Ctrl+Insert
+      if ((isCtrlOrMeta && key === 'c') || (event.ctrlKey && event.key === 'Insert')) {
         if (term.hasSelection()) {
-          const selected = term.getSelection()
-          if (selected) {
-            ipc.copyToClipboard(selected)
+          if (event.type === 'keydown') {
+            copySelection(term)
           }
-          return false // Don't send \x03 to PTY when user is copying selected text
+          return false // Handled: don't send SIGINT to PTY when user wants to copy
         }
-        return true // No selection: send SIGINT to process
+        // No selection: let Ctrl+C pass as SIGINT (\x03) to cancel process
+        return true
       }
 
-      // Paste: Ctrl+V / Ctrl+Shift+V
-      if (isCtrlOrMeta && (event.key === 'v' || event.key === 'V')) {
+      // Paste: Ctrl+V / Ctrl+Shift+V / Shift+Insert
+      if ((isCtrlOrMeta && key === 'v') || (event.shiftKey && event.key === 'Insert')) {
         if (event.type === 'keydown') {
-          pasteFromClipboard(sessionId)
+          pasteToTerminal(term, sessionId)
         }
-        return false // Don't send \x16 to PTY
+        return false // Handled: don't send raw control byte to PTY
       }
 
       return true
     })
 
-    // Native paste listener for external tools (e.g., Wispr Flow, speech dictation, OS clipboard)
-    element.addEventListener('paste', (event: ClipboardEvent) => {
+    // Native paste handler (captures paste from OS clipboard, Wispr Flow, or Edit menu)
+    const handleNativePaste = (event: ClipboardEvent) => {
       event.preventDefault()
       event.stopPropagation()
       const text = event.clipboardData?.getData('text')
-      if (text) {
-        ipc.writeSession(sessionId, text)
-      } else {
-        pasteFromClipboard(sessionId)
+      pasteToTerminal(term, sessionId, text)
+    }
+
+    element.addEventListener('paste', handleNativePaste, true)
+    term.textarea?.addEventListener('paste', handleNativePaste, true)
+
+    // Support for external dictation tools (Wispr Flow, Windows Voice Typing, IME)
+    // Wispr Flow and voice tools may inject text into the helper textarea directly
+    const syncInjectedValue = () => {
+      const ta = term.textarea
+      if (ta && ta.value) {
+        const val = ta.value
+        ta.value = ''
+        pasteToTerminal(term, sessionId, val)
+      }
+    }
+
+    term.textarea?.addEventListener('input', syncInjectedValue)
+    term.textarea?.addEventListener('change', syncInjectedValue)
+    term.textarea?.addEventListener('compositionend', (e: CompositionEvent) => {
+      if (e.data) {
+        pasteToTerminal(term, sessionId, e.data)
       }
     })
 
-    // Right-click paste (Windows Terminal style)
+    // Right-click: Copy if selection exists, else Paste (Windows Terminal behavior)
     element.addEventListener('contextmenu', (event: MouseEvent) => {
       event.preventDefault()
       if (term.hasSelection()) {
-        const selected = term.getSelection()
-        if (selected) {
-          ipc.copyToClipboard(selected)
-          term.clearSelection()
-        }
+        copySelection(term)
+        term.clearSelection()
       } else {
-        pasteFromClipboard(sessionId)
+        pasteToTerminal(term, sessionId)
       }
     })
 
-    // Focus terminal on click/mousedown
+    // Focus terminal helper textarea on mousedown
     element.addEventListener('mousedown', () => {
       term.focus()
-    })
-
-    // Key handling to PTY
-    term.onData((input) => {
-      ipc.writeSession(sessionId, input)
     })
 
     const entry: TerminalEntry = {
