@@ -272,24 +272,46 @@ export const Sidebar: React.FC = () => {
                       )
                     })()}
 
-                    {/* Quick Launch: Windows Terminal / Bash */}
+                    {/* Quick Launch: Bash */}
                     {(() => {
-                      const wtAgent = agents.find((a) => (a.id === 'windows-terminal' || a.command === 'wt.exe') && a.enabled !== false)
-                      if (!wtAgent) return null
+                      const bashAgent = agents.find((a) => (a.id === 'git-bash' || a.id === 'bash' || a.command === 'bash.exe' || a.id === 'windows-terminal') && a.enabled !== false)
+                      if (!bashAgent) return null
                       return (
                         <button
                           onClick={async (e) => {
                             e.stopPropagation()
                             await createSession({
                               projectId: project.id,
-                              agentId: wtAgent.id,
+                              agentId: bashAgent.id,
                               cwd: project.cwd
                             })
                           }}
-                          title="Abrir Windows Terminal (Bash) nesta pasta"
+                          title="Abrir Bash (MINGW64) nesta pasta"
                           className="px-1 py-0.5 rounded text-[10px] font-bold text-[#4cc2ff] hover:bg-[#4cc2ff]/20 transition"
                         >
-                          WT
+                          Ba
+                        </button>
+                      )
+                    })()}
+
+                    {/* Quick Launch: CMD */}
+                    {(() => {
+                      const cmdAgent = agents.find((a) => (a.id === 'cmd' || a.command === 'cmd.exe') && a.enabled !== false)
+                      if (!cmdAgent) return null
+                      return (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await createSession({
+                              projectId: project.id,
+                              agentId: cmdAgent.id,
+                              cwd: project.cwd
+                            })
+                          }}
+                          title="Abrir Prompt de Comando (CMD) nesta pasta"
+                          className="px-1 py-0.5 rounded text-[10px] font-bold text-[#c8c8c8] hover:bg-[#c8c8c8]/20 transition"
+                        >
+                          CM
                         </button>
                       )
                     })()}

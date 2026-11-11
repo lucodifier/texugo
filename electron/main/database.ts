@@ -189,6 +189,21 @@ export class AppDatabase {
   }
 
   ensureDefaultAgents(): void {
+    // Migra windows-terminal legado (wt.exe) para bash.exe nativo
+    try {
+      this.db.run(`
+        UPDATE agents 
+        SET command = 'bash.exe', args_json = '["--login","-i"]', env_json = '{"MSYSTEM":"MINGW64"}'
+        WHERE command = 'wt.exe' OR id = 'windows-terminal'
+      `)
+      this.db.run(`
+        UPDATE agents 
+        SET name = 'Bash', color = '#4cc2ff', icon = 'Ba', env_json = '{"MSYSTEM":"MINGW64"}'
+        WHERE id = 'git-bash'
+      `)
+      this.persist()
+    } catch {}
+
     for (const agent of defaultAgents()) {
       if (!this.getAgent(agent.id)) this.upsertAgent(agent)
     }

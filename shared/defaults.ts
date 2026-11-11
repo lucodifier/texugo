@@ -17,10 +17,10 @@ export function defaultAgents(): AgentProfile[] {
     agent('claude', 'Claude Code', 'claude', 'Cl', '#d4a574', 'claude'),
     agent('freebuff', 'Freebuff', 'freebuff', 'Fb', '#00e599', 'none'),
     agent('codex', 'Codex', 'codex', 'Cx', '#10a37f', 'codex'),
-    agent('windows-terminal', 'Windows Terminal (Bash)', 'wt.exe', 'WT', '#4cc2ff', 'none', ['-p', 'Git Bash']),
-    agent('git-bash', 'Git Bash', 'bash.exe', 'Ba', '#e08a6a', 'none', ['--login', '-i']),
-    agent('powershell', 'PowerShell', 'powershell.exe', 'PS', '#4fc1ff', 'none', ['-NoLogo']),
+    agent('git-bash', 'Bash', 'bash.exe', 'Ba', '#4cc2ff', 'none', ['--login', '-i'], true, { MSYSTEM: 'MINGW64' }),
     agent('cmd', 'CMD', 'cmd.exe', 'CM', '#c8c8c8', 'none'),
+    agent('powershell', 'PowerShell', 'powershell.exe', 'PS', '#4fc1ff', 'none', ['-NoLogo']),
+    agent('windows-terminal', 'Windows Terminal (Bash)', 'bash.exe', 'WT', '#4cc2ff', 'none', ['--login', '-i'], true, { MSYSTEM: 'MINGW64' }),
     agent('opencode', 'OpenCode', 'opencode', 'Oc', '#7c9cff', 'none'),
     agent('cursor', 'Cursor', 'cursor-agent', 'Cu', '#c4b5fd', 'none'),
     agent('gemini', 'Gemini CLI', 'gemini', 'Ge', '#7ec8ff', 'none')
@@ -35,7 +35,8 @@ function agent(
   color: string,
   resumeKind: AgentProfile['resumeKind'],
   args: string[] = [],
-  enabled: boolean = true
+  enabled: boolean = true,
+  env: Record<string, string> = {}
 ): AgentProfile {
   return {
     id,
@@ -43,7 +44,7 @@ function agent(
     command,
     args,
     cwd: null,
-    env: {},
+    env,
     icon,
     color,
     resumeKind,

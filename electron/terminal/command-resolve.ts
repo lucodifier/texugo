@@ -12,13 +12,20 @@ export function commandSearchDirs(env: Record<string, string>, homeDir: string):
   const pathKey = Object.keys(env).find((key) => key.toLowerCase() === 'path')
   const pathValue = pathKey ? env[pathKey] : ''
   const extras = [
+    'C:\\Program Files\\Git\\bin',
+    'C:\\Program Files\\Git\\usr\\bin',
+    'C:\\Program Files\\Git\\cmd',
+    'C:\\Program Files (x86)\\Git\\bin',
+    'C:\\Program Files (x86)\\Git\\usr\\bin',
+    'C:\\Program Files (x86)\\Git\\cmd',
+    path.join(homeDir, 'AppData', 'Local', 'Programs', 'Git', 'bin'),
+    path.join(homeDir, 'AppData', 'Local', 'Programs', 'Git', 'usr', 'bin'),
+    path.join(homeDir, 'AppData', 'Local', 'Programs', 'Git', 'cmd'),
     path.join(homeDir, '.local', 'bin'),
     env.APPDATA ? path.join(env.APPDATA, 'npm') : '',
     path.join(homeDir, 'AppData', 'Roaming', 'npm'),
     path.join(homeDir, '.config', 'manicode'),
     path.join(homeDir, 'AppData', 'Local', 'Microsoft', 'WindowsApps'),
-    'C:\\Program Files\\Git\\bin',
-    'C:\\Program Files\\Git\\cmd',
     'C:\\Windows\\System32\\WindowsPowerShell\\v1.0',
     'C:\\Windows\\System32'
   ]

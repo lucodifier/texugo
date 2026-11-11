@@ -490,7 +490,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       const isShellDefault =
         !isAIOrCustomAgent &&
-        (session.agentId === defaultId || ['powershell', 'cmd', 'git-bash', 'windows-terminal'].includes(session.agentId || ''))
+        (session.agentId === defaultId || ['powershell', 'cmd', 'git-bash', 'bash', 'windows-terminal'].includes(session.agentId || ''))
 
       // Se o usuário estava no shell padrão e digitou "exit" (exitCode 0): fecha a janela
       if (isShellDefault && packet.exitCode === 0) {

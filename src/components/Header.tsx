@@ -252,7 +252,8 @@ export const Header: React.FC = () => {
           const claudeAgent = agents.find((a) => (a.command.includes('claude') || a.id === 'claude') && a.enabled !== false)
           const fbAgent = agents.find((a) => (a.command.includes('freebuff') || a.id === 'freebuff') && a.enabled !== false)
           const codexAgent = agents.find((a) => (a.command.includes('codex') || a.id === 'codex') && a.enabled !== false)
-          const wtAgent = agents.find((a) => (a.id === 'windows-terminal' || a.command === 'wt.exe') && a.enabled !== false)
+          const bashAgent = agents.find((a) => (a.id === 'git-bash' || a.id === 'bash' || a.command === 'bash.exe' || a.id === 'windows-terminal') && a.enabled !== false)
+          const cmdAgent = agents.find((a) => (a.id === 'cmd' || a.command === 'cmd.exe') && a.enabled !== false)
 
           return (
             <div className="flex items-center gap-1">
@@ -307,20 +308,37 @@ export const Header: React.FC = () => {
                 </button>
               )}
 
-              {wtAgent && (
+              {bashAgent && (
                 <button
                   onClick={async () => {
                     await createSession({
                       projectId: activeProject.id,
-                      agentId: wtAgent.id,
+                      agentId: bashAgent.id,
                       cwd: activeProject.cwd
                     })
                   }}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#4cc2ff]/40 text-[#4cc2ff] text-xs font-semibold transition"
-                  title={`Abrir Windows Terminal (Bash) em ${activeProject.name}`}
+                  title={`Abrir Bash (MINGW64) em ${activeProject.name}`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#4cc2ff]" />
-                  <span>Terminal</span>
+                  <span>Bash</span>
+                </button>
+              )}
+
+              {cmdAgent && (
+                <button
+                  onClick={async () => {
+                    await createSession({
+                      projectId: activeProject.id,
+                      agentId: cmdAgent.id,
+                      cwd: activeProject.cwd
+                    })
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#c8c8c8]/40 text-[#c8c8c8] text-xs font-semibold transition"
+                  title={`Abrir Prompt de Comando (CMD) em ${activeProject.name}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#c8c8c8]" />
+                  <span>CMD</span>
                 </button>
               )}
             </div>
@@ -366,7 +384,7 @@ export const Header: React.FC = () => {
                         </div>
 
                         {/* Enabled Agents */}
-                        {enabledList.slice(0, 6).map((agent) => (
+                        {enabledList.map((agent) => (
                           <button
                             key={`${proj.id}-${agent.id}`}
                             onClick={async () => {
