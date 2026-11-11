@@ -1,6 +1,6 @@
 # 🦡 Texugo - Estado Atual da Versão
 
-**Data de Atualização:** 11 de Novembro de 2026, 11:25 (Horário de Brasília)  
+**Data de Atualização:** 11 de Novembro de 2026, 15:02 (Horário de Brasília)  
 **Repositório:** `C:\codes\CodeHolistic\TexugoIA`  
 **Branch:** `master`  
 **Executáveis gerados e prontos para teste:**
@@ -31,6 +31,7 @@ O **Texugo** é um desktop manager local em Electron + React + Tailwind + xterm 
 | **10** | **Suporte a Freebuff, Codex, Windows Terminal e Gerenciamento nas Configurações (Problema 2)** | Adicionados **Freebuff** (`Fb`), **Codex** (`Cx`), **Windows Terminal (Bash)** (`WT`) e **Git Bash** (`Ba`); criada aba de gerenciamento em Configurações com toggle On/Off, edição e cadastro de terminais. | `shared/types.ts`, `shared/defaults.ts`, `electron/main/database.ts`, `electron/terminal/command-resolve.ts`, `src/features/settings/SettingsModal.tsx`, `src/features/agents/AgentModal.tsx`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/features/sessions/NewSessionModal.tsx` |
 | **11** | **Terminal travado em "[processo encerrado com código 0]" ao dar Ctrl+C (Problema 3)** | Auto-handoff imediato para o terminal padrão ao encerrar agente com Ctrl+C; despertar por tecla `Enter`; botões na barra superior e banner flutuante; auto-fechamento ao digitar `exit` no shell padrão. | `electron/main/ipc.ts`, `src/services/ipc.ts`, `src/stores/useAppStore.ts`, `src/features/terminal/terminal-registry.ts`, `src/features/terminal/TerminalPane.tsx` |
 | **12** | **Terminal ocupando só metade da tela com espaço vazio na direita (Problema 4)** | Quando há apenas 1 terminal aberto, o layout agora **força 100% da largura e altura** (`grid-cols-1 grid-rows-1`), ocupando a janela inteira sem deixar nenhuma coluna ou espaço preto vazio. A tela se divide apenas quando houver 2 ou mais terminais abertos. | `src/components/LayoutGrid.tsx` |
+| **13** | **Nome do projeto cortado em "O..." e Sidebar sem redimensionamento** | 1. **Sidebar Redimensionável:** Adicionada alça na borda direita da sidebar permitindo arrastar com o mouse para aumentar ou diminuir a largura (salva automaticamente no `localStorage`).<br>2. **Nome do Projeto Completo:** Removida a reserva estática de espaço dos botões invisíveis (agora aparecem como overlay apenas no hover), permitindo que o nome do projeto use 100% da largura da barra lateral sem truncar em "O...". | `src/components/Sidebar.tsx` |
 
 ---
 

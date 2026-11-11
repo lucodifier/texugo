@@ -33,6 +33,44 @@ export const Sidebar: React.FC = () => {
 
   const [gitBranches, setGitBranches] = useState<Record<string, string>>({})
 
+  // Resizable sidebar width (persisted in localStorage)
+  const [sidebarWidth, setSidebarWidth] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('texugo:sidebarWidth')
+      if (saved) {
+        const val = Number(saved)
+        if (val >= 200 && val <= 600) return val
+      }
+    } catch {}
+    return 290 // Default mais largo e espaçoso para acomodar nomes de projetos
+  })
+  const [isResizing, setIsResizing] = useState(false)
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsResizing(true)
+    const startX = e.clientX
+    const startW = sidebarWidth
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const newWidth = Math.min(600, Math.max(200, startW + (moveEvent.clientX - startX)))
+      setSidebarWidth(newWidth)
+    }
+
+    const onMouseUp = (upEvent: MouseEvent) => {
+      setIsResizing(false)
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+      const finalWidth = Math.min(600, Math.max(200, startW + (upEvent.clientX - startX)))
+      try {
+        localStorage.setItem('texugo:sidebarWidth', String(finalWidth))
+      } catch {}
+    }
+
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+  }
+
   // Periodically inspect Git branch for open projects
   useEffect(() => {
     const fetchBranches = () => {
@@ -74,7 +112,17 @@ export const Sidebar: React.FC = () => {
   }
 
   return (
-    <aside className="w-64 bg-[#12161f] border-r border-[#1e2330] flex flex-col h-full select-none">
+    <aside
+      style={{ width: `${sidebarWidth}px` }}
+      className="relative bg-[#12161f] border-r border-[#1e2330] flex flex-col h-full select-none flex-shrink-0"
+    >
+      {/* Resizer Handle na borda direita */}
+      <div
+        onMouseDown={startResizing}
+        className="absolute top-0 right-0 w-1.5 h-full cursor-col-resize hover:bg-[#3dd6c6]/50 active:bg-[#3dd6c6] transition-colors z-30"
+        title="Arraste para redimensionar a barra lateral"
+      />
+
       {/* Brand Header */}
       <div className="h-12 border-b border-[#1e2330] flex items-center justify-between px-4">
         <div
@@ -118,7 +166,6 @@ export const Sidebar: React.FC = () => {
             const runningSessions = projectSessions.filter(
               (s) => s.status === 'running' || s.status === 'starting'
             )
-            const runningCount = runningSessions.length
 
             // Active models or agents running in this project
             const activeModels = runningSessions.map((s) => {
@@ -135,148 +182,151 @@ export const Sidebar: React.FC = () => {
               <div
                 key={project.id}
                 onClick={() => switchProject(project.id)}
-                className={`group flex flex-col px-2.5 py-2 rounded-md cursor-pointer transition text-xs ${
+                className={`group relative flex flex-col px-2.5 py-2 rounded-md cursor-pointer transition text-xs ${
                   isActive
                     ? 'bg-[#1e2536] text-white font-medium border-l-2 border-[#3dd6c6]'
                     : 'text-[#9ba7b6] hover:bg-[#181d29] hover:text-[#d0d7de]'
                 }`}
                 title={`Projeto: ${project.name}\nPasta: ${project.cwd}${branch ? `\nBranch: ${branch}` : ''}${uniqueModels.length > 0 ? `\nModelos: ${uniqueModels.join(', ')}` : ''}`}
               >
-                {/* Top Line: Dot, Project Name, Status Badge / Actions */}
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-1">
+                {/* Top Line: Dot, Project Name, Actions overlay on hover */}
+                <div className="flex items-center justify-between w-full relative min-h-[22px]">
+                  {/* Project Name: usa todo o espaço livre */}
+                  <div className="flex items-center gap-2 truncate flex-1 min-w-0 pr-1">
                     <div
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: project.color || '#3dd6c6' }}
                     />
-                    <span className="truncate font-semibold text-white/95">{project.name}</span>
+                    <span className="truncate font-semibold text-white/95 text-xs" title={project.name}>
+                      {project.name}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {/* Actions visible on hover */}
-                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
-                      {/* Quick Launch: Claude Code */}
-                      {(() => {
-                        const claudeAgent = agents.find((a) => (a.command.includes('claude') || a.id === 'claude') && a.enabled !== false)
-                        if (!claudeAgent) return null
-                        return (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              await createSession({
-                                projectId: project.id,
-                                agentId: claudeAgent.id,
-                                cwd: project.cwd
-                              })
-                            }}
-                            title="Abrir terminal Claude Code nesta pasta"
-                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#d4a574] hover:bg-[#d4a574]/20 transition"
-                          >
-                            Cl
-                          </button>
-                        )
-                      })()}
+                  {/* Actions overlay on hover: não ocupa espaço enquanto o mouse estiver fora */}
+                  <div className={`hidden group-hover:flex items-center gap-0.5 absolute right-0 top-0 bottom-0 pl-2 rounded-r shadow-md z-10 transition-all ${
+                    isActive ? 'bg-[#1e2536]' : 'bg-[#181d29]'
+                  }`}>
+                    {/* Quick Launch: Claude Code */}
+                    {(() => {
+                      const claudeAgent = agents.find((a) => (a.command.includes('claude') || a.id === 'claude') && a.enabled !== false)
+                      if (!claudeAgent) return null
+                      return (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await createSession({
+                              projectId: project.id,
+                              agentId: claudeAgent.id,
+                              cwd: project.cwd
+                            })
+                          }}
+                          title="Abrir terminal Claude Code nesta pasta"
+                          className="px-1 py-0.5 rounded text-[10px] font-bold text-[#d4a574] hover:bg-[#d4a574]/20 transition"
+                        >
+                          Cl
+                        </button>
+                      )
+                    })()}
 
-                      {/* Quick Launch: Freebuff */}
-                      {(() => {
-                        const fbAgent = agents.find((a) => (a.command.includes('freebuff') || a.id === 'freebuff') && a.enabled !== false)
-                        if (!fbAgent) return null
-                        return (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              await createSession({
-                                projectId: project.id,
-                                agentId: fbAgent.id,
-                                cwd: project.cwd
-                              })
-                            }}
-                            title="Abrir terminal Freebuff nesta pasta"
-                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#00e599] hover:bg-[#00e599]/20 transition"
-                          >
-                            Fb
-                          </button>
-                        )
-                      })()}
+                    {/* Quick Launch: Freebuff */}
+                    {(() => {
+                      const fbAgent = agents.find((a) => (a.command.includes('freebuff') || a.id === 'freebuff') && a.enabled !== false)
+                      if (!fbAgent) return null
+                      return (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await createSession({
+                              projectId: project.id,
+                              agentId: fbAgent.id,
+                              cwd: project.cwd
+                            })
+                          }}
+                          title="Abrir terminal Freebuff nesta pasta"
+                          className="px-1 py-0.5 rounded text-[10px] font-bold text-[#00e599] hover:bg-[#00e599]/20 transition"
+                        >
+                          Fb
+                        </button>
+                      )
+                    })()}
 
-                      {/* Quick Launch: Codex */}
-                      {(() => {
-                        const codexAgent = agents.find((a) => (a.command.includes('codex') || a.id === 'codex') && a.enabled !== false)
-                        if (!codexAgent) return null
-                        return (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              await createSession({
-                                projectId: project.id,
-                                agentId: codexAgent.id,
-                                cwd: project.cwd
-                              })
-                            }}
-                            title="Abrir terminal Codex nesta pasta"
-                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#10a37f] hover:bg-[#10a37f]/20 transition"
-                          >
-                            Cx
-                          </button>
-                        )
-                      })()}
+                    {/* Quick Launch: Codex */}
+                    {(() => {
+                      const codexAgent = agents.find((a) => (a.command.includes('codex') || a.id === 'codex') && a.enabled !== false)
+                      if (!codexAgent) return null
+                      return (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await createSession({
+                              projectId: project.id,
+                              agentId: codexAgent.id,
+                              cwd: project.cwd
+                            })
+                          }}
+                          title="Abrir terminal Codex nesta pasta"
+                          className="px-1 py-0.5 rounded text-[10px] font-bold text-[#10a37f] hover:bg-[#10a37f]/20 transition"
+                        >
+                          Cx
+                        </button>
+                      )
+                    })()}
 
-                      {/* Quick Launch: Windows Terminal / Bash */}
-                      {(() => {
-                        const wtAgent = agents.find((a) => (a.id === 'windows-terminal' || a.command === 'wt.exe') && a.enabled !== false)
-                        if (!wtAgent) return null
-                        return (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              await createSession({
-                                projectId: project.id,
-                                agentId: wtAgent.id,
-                                cwd: project.cwd
-                              })
-                            }}
-                            title="Abrir Windows Terminal (Bash) nesta pasta"
-                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#4cc2ff] hover:bg-[#4cc2ff]/20 transition"
-                          >
-                            WT
-                          </button>
-                        )
-                      })()}
+                    {/* Quick Launch: Windows Terminal / Bash */}
+                    {(() => {
+                      const wtAgent = agents.find((a) => (a.id === 'windows-terminal' || a.command === 'wt.exe') && a.enabled !== false)
+                      if (!wtAgent) return null
+                      return (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            await createSession({
+                              projectId: project.id,
+                              agentId: wtAgent.id,
+                              cwd: project.cwd
+                            })
+                          }}
+                          title="Abrir Windows Terminal (Bash) nesta pasta"
+                          className="px-1 py-0.5 rounded text-[10px] font-bold text-[#4cc2ff] hover:bg-[#4cc2ff]/20 transition"
+                        >
+                          WT
+                        </button>
+                      )
+                    })()}
 
-                      {/* Pick another agent / custom */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          switchProject(project.id)
-                          setNewSessionModal(true)
-                        }}
-                        title="Abrir outro agente ou terminal customizado"
-                        className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
-                      >
-                        <Plus size={13} />
-                      </button>
-                      <button
-                        onClick={(e) => handleOpenFolder(e, project.cwd)}
-                        title="Abrir no Explorer"
-                        className="p-1 hover:text-white text-[#8e9aa8]"
-                      >
-                        <FolderOpen size={12} />
-                      </button>
-                      <button
-                        onClick={(e) => handleEditProject(e, project)}
-                        title="Editar Projeto"
-                        className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
-                      >
-                        <Edit2 size={12} />
-                      </button>
-                      <button
-                        onClick={(e) => handleDeleteProject(e, project.id, project.name)}
-                        title="Excluir Projeto"
-                        className="p-1 hover:text-red-400 text-[#8e9aa8]"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
+                    {/* Pick another agent / custom */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        switchProject(project.id)
+                        setNewSessionModal(true)
+                      }}
+                      title="Abrir outro agente ou terminal customizado"
+                      className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
+                    >
+                      <Plus size={13} />
+                    </button>
+                    <button
+                      onClick={(e) => handleOpenFolder(e, project.cwd)}
+                      title="Abrir no Explorer"
+                      className="p-1 hover:text-white text-[#8e9aa8]"
+                    >
+                      <FolderOpen size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => handleEditProject(e, project)}
+                      title="Editar Projeto"
+                      className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeleteProject(e, project.id, project.name)}
+                      title="Excluir Projeto"
+                      className="p-1 hover:text-red-400 text-[#8e9aa8]"
+                    >
+                      <Trash2 size={12} />
+                    </button>
                   </div>
                 </div>
 
@@ -287,7 +337,7 @@ export const Sidebar: React.FC = () => {
                     {branch && (
                       <span className="flex items-center gap-1 text-[#8e9aa8] truncate" title={`Branch git: ${branch}`}>
                         <GitBranch size={11} className="text-[#3dd6c6] flex-shrink-0" />
-                        <span className="truncate max-w-[85px]">{branch}</span>
+                        <span className="truncate max-w-[120px]">{branch}</span>
                       </span>
                     )}
 
