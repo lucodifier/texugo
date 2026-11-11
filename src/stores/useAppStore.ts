@@ -30,6 +30,7 @@ interface AppState {
   workspace: WorkspaceState
   windowsBuild: number
   homeDir: string
+  detectedModels: Record<string, string>
 
   // Modals UI state
   projectModal: { open: boolean; editing: Project | null }
@@ -69,6 +70,7 @@ interface AppState {
 
   // Status updates from IPC listener
   handleStatusUpdate: (packet: StatusPacket) => void
+  setDetectedModel: (sessionId: string, model: string) => void
 
   // Agents
   saveAgent: (agent: AgentInput) => Promise<void>
@@ -88,6 +90,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   workspace: { openProjectIds: [], activeProjectId: null, focusedSessionId: null },
   windowsBuild: 0,
   homeDir: '',
+  detectedModels: {},
+
+  setDetectedModel: (sessionId, model) => {
+    set((state) => {
+      if (state.detectedModels[sessionId] === model) return state
+      return { detectedModels: { ...state.detectedModels, [sessionId]: model } }
+    })
+  },
 
   projectModal: { open: false, editing: null },
   agentModal: { open: false, editing: null },
@@ -113,6 +123,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       // Register global IPC status listener
       ipc.onStatus((packet) => {
         get().handleStatusUpdate(packet)
+      })
+
+      // Global live model detection from terminal stream
+      ipc.onData(({ sessionId, data }) => {
+        const match = data.match(/\b(Sonnet[\s0-9.]+|Opus[\s0-9.]+|Haiku[\s0-9.]+|Claude\s+[0-9.]+\s+[A-Za-z]+|gpt-[0-9a-z.-]+|o1-[a-z]+|o3-[a-z]+|gemini-[0-9a-z.-]+)\b/i)
+        if (match && match[1]) {
+          get().setDetectedModel(sessionId, match[1].trim())
+        }
+      })
+
+      // Scan existing transcripts for active/starting sessions
+      data.sessions.forEach((s) => {
+        ipc.tailTranscript(s.id, 8000).then((text) => {
+          const match = text.match(/\b(Sonnet[\s0-9.]+|Opus[\s0-9.]+|Haiku[\s0-9.]+|Claude\s+[0-9.]+\s+[A-Za-z]+|gpt-[0-9a-z.-]+|o1-[a-z]+|o3-[a-z]+|gemini-[0-9a-z.-]+)\b/i)
+          if (match && match[1]) {
+            get().setDetectedModel(s.id, match[1].trim())
+          }
+        }).catch(() => {})
       })
     } catch (err: any) {
       console.error('Falha ao inicializar Agent Desktop:', err)

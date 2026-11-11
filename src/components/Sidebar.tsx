@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   FolderPlus,
   Settings as SettingsIcon,
@@ -8,7 +8,8 @@ import {
   Trash2,
   Edit2,
   FolderOpen,
-  Plus
+  Plus,
+  GitBranch
 } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { ipc } from '../services/ipc'
@@ -20,6 +21,7 @@ export const Sidebar: React.FC = () => {
     sessions,
     agents,
     workspace,
+    detectedModels,
     switchProject,
     setProjectModal,
     setAgentModal,
@@ -28,6 +30,31 @@ export const Sidebar: React.FC = () => {
     createSession,
     deleteProject
   } = useAppStore()
+
+  const [gitBranches, setGitBranches] = useState<Record<string, string>>({})
+
+  // Periodically inspect Git branch for open projects
+  useEffect(() => {
+    const fetchBranches = () => {
+      projects.forEach((p) => {
+        if (p.cwd) {
+          ipc.inspectGit(p.cwd).then((info) => {
+            if (info?.isRepo && info?.branch) {
+              setGitBranches((prev) => (prev[p.id] === info.branch ? prev : { ...prev, [p.id]: info.branch }))
+            }
+          }).catch(() => {})
+        }
+      })
+    }
+
+    fetchBranches()
+    const timer = setInterval(fetchBranches, 8000)
+    window.addEventListener('focus', fetchBranches)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('focus', fetchBranches)
+    }
+  }, [projects])
 
   const handleDeleteProject = (e: React.MouseEvent, id: string, name: string) => {
     e.stopPropagation()
@@ -88,112 +115,156 @@ export const Sidebar: React.FC = () => {
           projects.map((project) => {
             const isActive = project.id === workspace.activeProjectId
             const projectSessions = sessions.filter((s) => s.projectId === project.id)
-            const runningCount = projectSessions.filter(
+            const runningSessions = projectSessions.filter(
               (s) => s.status === 'running' || s.status === 'starting'
-            ).length
+            )
+            const runningCount = runningSessions.length
+
+            // Active models or agents running in this project
+            const activeModels = runningSessions.map((s) => {
+              const model = detectedModels[s.id]
+              if (model) return model
+              const agent = agents.find((a) => a.id === s.agentId)
+              return agent?.name || s.command
+            })
+            const uniqueModels = [...new Set(activeModels)]
+
+            const branch = gitBranches[project.id]
 
             return (
               <div
                 key={project.id}
                 onClick={() => switchProject(project.id)}
-                className={`group flex items-center justify-between px-2.5 py-2 rounded-md cursor-pointer transition text-xs ${
+                className={`group flex flex-col px-2.5 py-2 rounded-md cursor-pointer transition text-xs ${
                   isActive
                     ? 'bg-[#1e2536] text-white font-medium border-l-2 border-[#3dd6c6]'
                     : 'text-[#9ba7b6] hover:bg-[#181d29] hover:text-[#d0d7de]'
                 }`}
-                title={`Projeto: ${project.name}\nPasta: ${project.cwd}`}
+                title={`Projeto: ${project.name}\nPasta: ${project.cwd}${branch ? `\nBranch: ${branch}` : ''}${uniqueModels.length > 0 ? `\nModelos: ${uniqueModels.join(', ')}` : ''}`}
               >
-                <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-1">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: project.color || '#3dd6c6' }}
-                  />
-                  <span className="truncate">{project.name}</span>
-                </div>
+                {/* Top Line: Dot, Project Name, Status Badge / Actions */}
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2 truncate flex-1 min-w-0 mr-1">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: project.color || '#3dd6c6' }}
+                    />
+                    <span className="truncate font-semibold text-white/95">{project.name}</span>
+                  </div>
 
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {runningCount > 0 ? (
-                    <span
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]"
-                      title={`${runningCount} terminal(is) em execução`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      <span>{runningCount}</span>
-                    </span>
-                  ) : projectSessions.length > 0 ? (
-                    <span
-                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1e2433] border border-[#2d374d] text-[#8e9aa8] font-mono text-[10px]"
-                      title={`${projectSessions.length} terminal(is) encerrado(s)`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#556377]" />
-                      <span>{projectSessions.length}</span>
-                    </span>
-                  ) : null}
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {runningCount > 0 ? (
+                      <span
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]"
+                        title={`${runningCount} terminal(is) em execução`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span>{runningCount}</span>
+                      </span>
+                    ) : projectSessions.length > 0 ? (
+                      <span
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1e2433] border border-[#2d374d] text-[#8e9aa8] font-mono text-[10px]"
+                        title={`${projectSessions.length} terminal(is) encerrado(s)`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#556377]" />
+                        <span>{projectSessions.length}</span>
+                      </span>
+                    ) : null}
 
-                  {/* Actions visible on hover */}
-                  <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation()
-                        const claudeAgent = agents.find((a) => a.command.includes('claude')) || agents[0]
-                        if (claudeAgent) {
-                          await createSession({
-                            projectId: project.id,
-                            agentId: claudeAgent.id,
-                            cwd: project.cwd
-                          })
-                        } else {
-                          setNewSessionModal(true)
-                        }
-                      }}
-                      title="Abrir novo terminal (Claude Code) nesta pasta"
-                      className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
-                    >
-                      <Plus size={13} />
-                    </button>
-                    <button
-                      onClick={(e) => handleOpenFolder(e, project.cwd)}
-                      title="Abrir no Explorer"
-                      className="p-1 hover:text-white text-[#8e9aa8]"
-                    >
-                      <FolderOpen size={12} />
-                    </button>
-                    <button
-                      onClick={(e) => handleEditProject(e, project)}
-                      title="Editar Projeto"
-                      className="p-1 hover:text-white text-[#8e9aa8]"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteProject(e, project.id, project.name)}
-                      title="Excluir Projeto"
-                      className="p-1 hover:text-red-400 text-[#8e9aa8]"
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    {/* Actions visible on hover */}
+                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const claudeAgent = agents.find((a) => a.command.includes('claude')) || agents[0]
+                          if (claudeAgent) {
+                            await createSession({
+                              projectId: project.id,
+                              agentId: claudeAgent.id,
+                              cwd: project.cwd
+                            })
+                          } else {
+                            setNewSessionModal(true)
+                          }
+                        }}
+                        title="Abrir novo terminal (Claude Code) nesta pasta"
+                        className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
+                      >
+                        <Plus size={13} />
+                      </button>
+                      <button
+                        onClick={(e) => handleOpenFolder(e, project.cwd)}
+                        title="Abrir no Explorer"
+                        className="p-1 hover:text-white text-[#8e9aa8]"
+                      >
+                        <FolderOpen size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => handleEditProject(e, project)}
+                        title="Editar Projeto"
+                        className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteProject(e, project.id, project.name)}
+                        title="Excluir Projeto"
+                        className="p-1 hover:text-red-400 text-[#8e9aa8]"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
                   </div>
                 </div>
+
+                {/* Sub-line: Branch + Model */}
+                {(branch || uniqueModels.length > 0) && (
+                  <div className="flex items-center gap-1.5 mt-1 pl-[18px] text-[10px] font-mono truncate">
+                    {/* Git Branch */}
+                    {branch && (
+                      <span className="flex items-center gap-1 text-[#8e9aa8] truncate" title={`Branch git: ${branch}`}>
+                        <GitBranch size={11} className="text-[#3dd6c6] flex-shrink-0" />
+                        <span className="truncate max-w-[85px]">{branch}</span>
+                      </span>
+                    )}
+
+                    {/* Separator if both exist */}
+                    {branch && uniqueModels.length > 0 && (
+                      <span className="text-[#3d485c] flex-shrink-0">•</span>
+                    )}
+
+                    {/* Active Model(s) */}
+                    {uniqueModels.length > 0 && (
+                      <span
+                        className="flex items-center gap-1 text-emerald-400 truncate"
+                        title={`Modelo(s) ativo(s): ${uniqueModels.join(', ')}`}
+                      >
+                        <Bot size={11} className="text-emerald-400 flex-shrink-0" />
+                        <span className="truncate font-medium">{uniqueModels.join(', ')}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })
         )}
       </div>
 
-      {/* Footer Navigation */}
-      <div className="border-t border-[#1e2330] p-2 space-y-1">
+      {/* Footer Controls */}
+      <div className="p-3 border-t border-[#1e2330] space-y-1">
         <button
           onClick={() => setAgentModal(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
+          className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
         >
-          <Bot size={15} />
+          <Bot size={15} className="text-[#3dd6c6]" />
           <span>Perfis de Agentes</span>
         </button>
         <button
           onClick={() => setSettingsModal(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
+          className="flex items-center gap-2.5 w-full px-2.5 py-1.5 rounded text-xs text-[#8e9aa8] hover:text-white hover:bg-[#181d29] transition"
         >
-          <SettingsIcon size={15} />
+          <SettingsIcon size={15} className="text-[#8e9aa8]" />
           <span>Configurações</span>
         </button>
       </div>

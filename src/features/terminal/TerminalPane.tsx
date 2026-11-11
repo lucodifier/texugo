@@ -52,7 +52,9 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
     if (!text) return
     const match = text.match(/\b(Sonnet[\s0-9.]+|Opus[\s0-9.]+|Haiku[\s0-9.]+|Claude\s+[0-9.]+\s+[A-Za-z]+|gpt-[0-9a-z.-]+|o1-[a-z]+|o3-[a-z]+|gemini-[0-9a-z.-]+)\b/i)
     if (match && match[1]) {
-      setDetectedModel(match[1].trim())
+      const m = match[1].trim()
+      setDetectedModel(m)
+      useAppStore.getState().setDetectedModel(session.id, m)
     }
   }
 
