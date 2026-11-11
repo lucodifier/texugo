@@ -120,12 +120,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
   const getStatusBadge = () => {
     switch (session.status) {
       case 'running':
-        return (
-          <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-mono">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            executando
-          </span>
-        )
+        return null // Removido o texto redundante "executando"
       case 'starting':
         return (
           <span className="flex items-center gap-1 text-[10px] text-sky-400 font-mono">
@@ -135,12 +130,16 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
         )
       case 'exited':
         return (
-          <span className="text-[10px] text-[#6e7d91] font-mono">
+          <span className="text-[10px] text-[#8e9aa8] font-mono bg-[#1a202c] px-1.5 py-0.5 rounded border border-[#2d3748]">
             encerrado {session.exitCode !== null ? `(${session.exitCode})` : ''}
           </span>
         )
       case 'error':
-        return <span className="text-[10px] text-red-400 font-mono font-medium">erro</span>
+        return (
+          <span className="text-[10px] text-red-400 font-mono font-medium bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/30">
+            erro
+          </span>
+        )
       default:
         return null
     }
@@ -197,8 +196,10 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
             </span>
           )}
 
-          {/* Session Name */}
-          <span className="font-medium text-white truncate text-xs">{session.name}</span>
+          {/* Session Name (shown if distinct from agent name) */}
+          {session.name && session.name !== agent?.name && (
+            <span className="font-medium text-white truncate text-xs">{session.name}</span>
+          )}
 
           {/* CWD */}
           <span
