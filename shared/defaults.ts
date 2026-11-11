@@ -52,9 +52,9 @@ function agent(
 export function defaultSettings(homeDir: string): Settings {
   return {
     theme: 'dark',
-    fontFamily: '"Cascadia Mono", "Cascadia Code", Consolas, monospace',
+    fontFamily: '"Cascadia Code", "Cascadia Mono", Consolas, monospace',
     fontSize: 14,
-    lineHeight: 1.2,
+    lineHeight: 1.0,
     letterSpacing: 0,
     scrollback: 100_000,
     defaultAgentId: 'powershell',

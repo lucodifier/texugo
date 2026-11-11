@@ -263,7 +263,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
       </div>
 
       {/* Terminal Canvas Container */}
-      <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0e12]">
+      <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0e12] p-2">
         <div ref={containerRef} className="w-full h-full" />
 
         {/* Floating Scroll to Bottom Button */}

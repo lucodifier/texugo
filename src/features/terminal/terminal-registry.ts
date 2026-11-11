@@ -20,8 +20,15 @@ export interface TerminalEntry {
   onScrollStateChange?: (isAtBottom: boolean) => void
 }
 
+let lastPaste = {
+  sessionId: '',
+  text: '',
+  time: 0
+}
+
 /**
  * Pastes text through xterm.js (handles bracketed paste mode, CRLF, and emits onData)
+ * Deduplicates identical paste calls within 300ms to avoid double-pasting.
  */
 function pasteToTerminal(term: Terminal, sessionId: string, text?: string) {
   let toPaste = text
@@ -49,6 +56,17 @@ function pasteToTerminal(term: Terminal, sessionId: string, text?: string) {
   }
 
   if (!toPaste) return
+
+  // Deduplication: prevent the same text from being pasted twice within 300ms to the same session
+  const now = Date.now()
+  if (
+    lastPaste.sessionId === sessionId &&
+    lastPaste.text === toPaste &&
+    now - lastPaste.time < 300
+  ) {
+    return
+  }
+  lastPaste = { sessionId, text: toPaste, time: now }
 
   try {
     term.paste(toPaste)
@@ -83,6 +101,7 @@ function copySelection(term: Terminal): boolean {
 class TerminalRegistry {
   private entries = new Map<string, TerminalEntry>()
   private settings: Settings | null = null
+  private resizeRafs = new Map<string, number>()
 
   constructor() {
     // Listen for incoming terminal data packets from Electron main
@@ -113,9 +132,9 @@ class TerminalRegistry {
 
     const s = initialSettings || this.settings
     const termOptions: ITerminalOptions = {
-      fontFamily: s?.fontFamily || '"Cascadia Mono", Consolas, monospace',
+      fontFamily: s?.fontFamily || '"Cascadia Code", "Cascadia Mono", Consolas, monospace',
       fontSize: s?.fontSize || 14,
-      lineHeight: s?.lineHeight || 1.2,
+      lineHeight: s?.lineHeight || 1.0,
       letterSpacing: s?.letterSpacing || 0,
       scrollback: s?.scrollback || 100_000,
       cursorBlink: true,
@@ -143,7 +162,7 @@ class TerminalRegistry {
         brightCyan: '#20c997',
         brightWhite: '#ffffff'
       },
-      allowTransparency: true
+      allowTransparency: false
     }
 
     const term = new Terminal(termOptions)
@@ -224,30 +243,13 @@ class TerminalRegistry {
       event.preventDefault()
       event.stopPropagation()
       const text = event.clipboardData?.getData('text')
-      pasteToTerminal(term, sessionId, text)
+      if (text) {
+        pasteToTerminal(term, sessionId, text)
+      }
     }
 
     element.addEventListener('paste', handleNativePaste, true)
     term.textarea?.addEventListener('paste', handleNativePaste, true)
-
-    // Support for external dictation tools (Wispr Flow, Windows Voice Typing, IME)
-    // Wispr Flow and voice tools may inject text into the helper textarea directly
-    const syncInjectedValue = () => {
-      const ta = term.textarea
-      if (ta && ta.value) {
-        const val = ta.value
-        ta.value = ''
-        pasteToTerminal(term, sessionId, val)
-      }
-    }
-
-    term.textarea?.addEventListener('input', syncInjectedValue)
-    term.textarea?.addEventListener('change', syncInjectedValue)
-    term.textarea?.addEventListener('compositionend', (e: CompositionEvent) => {
-      if (e.data) {
-        pasteToTerminal(term, sessionId, e.data)
-      }
-    })
 
     // Right-click: Copy if selection exists, else Paste (Windows Terminal behavior)
     element.addEventListener('contextmenu', (event: MouseEvent) => {
@@ -303,13 +305,22 @@ class TerminalRegistry {
       }
       container.appendChild(entry.element)
       entry.container = container
-      requestAnimationFrame(() => {
+
+      const fitAndSync = () => {
         try {
           entry.fitAddon.fit()
           this.syncDimensions(sessionId)
           entry.term.focus()
         } catch {}
-      })
+      }
+
+      if (typeof document !== 'undefined' && document.fonts?.ready) {
+        document.fonts.ready.then(() => {
+          requestAnimationFrame(fitAndSync)
+        })
+      } else {
+        requestAnimationFrame(fitAndSync)
+      }
     }
     return entry
   }
@@ -327,13 +338,21 @@ class TerminalRegistry {
   syncDimensions(sessionId: string) {
     const entry = this.entries.get(sessionId)
     if (!entry || !entry.container) return
-    try {
-      entry.fitAddon.fit()
-      const { cols, rows } = entry.term
-      if (cols > 0 && rows > 0) {
-        ipc.resizeSession(sessionId, cols, rows)
-      }
-    } catch {}
+
+    const existingRaf = this.resizeRafs.get(sessionId)
+    if (existingRaf) cancelAnimationFrame(existingRaf)
+
+    const raf = requestAnimationFrame(() => {
+      this.resizeRafs.delete(sessionId)
+      try {
+        entry.fitAddon.fit()
+        const { cols, rows } = entry.term
+        if (cols > 0 && rows > 0) {
+          ipc.resizeSession(sessionId, cols, rows)
+        }
+      } catch {}
+    })
+    this.resizeRafs.set(sessionId, raf)
   }
 
   feedData(sessionId: string, data: string) {

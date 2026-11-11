@@ -252,7 +252,9 @@ export class AppDatabase {
   getSettings(homeDir: string): Settings {
     const row = this.rows("SELECT value_json FROM settings WHERE key = 'app'")[0]
     const stored = row ? (JSON.parse(String(row.value_json)) as Partial<Settings>) : {}
-    return { ...defaultSettings(homeDir), ...stored, defaultCwd: stored.defaultCwd || homeDir }
+    const merged = { ...defaultSettings(homeDir), ...stored, defaultCwd: stored.defaultCwd || homeDir }
+    if (merged.lineHeight === 1.2) merged.lineHeight = 1.0
+    return merged
   }
 
   saveSettings(settings: Settings): void {

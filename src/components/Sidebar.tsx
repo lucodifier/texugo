@@ -113,13 +113,20 @@ export const Sidebar: React.FC = () => {
 
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   {runningCount > 0 ? (
-                    <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#3dd6c6]/10 text-[#3dd6c6] font-mono text-[10px]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#3dd6c6] animate-pulse" />
-                      {runningCount}
+                    <span
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-mono text-[10px]"
+                      title={`${runningCount} terminal(is) em execução`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>{runningCount}</span>
                     </span>
                   ) : projectSessions.length > 0 ? (
-                    <span className="text-[10px] text-[#657385] font-mono">
-                      {projectSessions.length}
+                    <span
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#1e2433] border border-[#2d374d] text-[#8e9aa8] font-mono text-[10px]"
+                      title={`${projectSessions.length} terminal(is) encerrado(s)`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#556377]" />
+                      <span>{projectSessions.length}</span>
                     </span>
                   ) : null}
 
