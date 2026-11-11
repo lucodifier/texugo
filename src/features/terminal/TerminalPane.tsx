@@ -3,8 +3,6 @@ import {
   Play,
   RotateCcw,
   Copy,
-  Maximize2,
-  Minimize2,
   X,
   Folder,
   ArrowDown,
@@ -19,15 +17,9 @@ import { ipc } from '../../services/ipc'
 
 interface TerminalPaneProps {
   session: SessionRecord
-  isMaximized: boolean
-  onToggleMaximize: () => void
 }
 
-export const TerminalPane: React.FC<TerminalPaneProps> = ({
-  session,
-  isMaximized,
-  onToggleMaximize
-}) => {
+export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const {
     projects,
@@ -245,14 +237,6 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
           </button>
 
-          {/* Maximize / Restore */}
-          <button
-            onClick={onToggleMaximize}
-            className="p-1 rounded text-[#8e9aa8] hover:text-white hover:bg-[#222a3a]"
-            title={isMaximized ? 'Restaurar grade' : 'Maximizar terminal'}
-          >
-            {isMaximized ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-          </button>
 
           {/* Close */}
           <button

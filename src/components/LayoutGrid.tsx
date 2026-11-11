@@ -53,23 +53,7 @@ export const LayoutGrid: React.FC = () => {
     ? autoPresetForCount(targetSessions.length)
     : (layout.preset as Exclude<PresetId, 'auto'>)
 
-  const { slots, maximizedSessionId } = layout
-
-  // Maximized terminal mode
-  if (maximizedSessionId) {
-    const session = sessions.find((s) => s.id === maximizedSessionId)
-    if (session) {
-      return (
-        <div className="flex-1 p-2 bg-[#0c0e12] overflow-hidden">
-          <TerminalPane
-            session={session}
-            isMaximized={true}
-            onToggleMaximize={() => maximizeSession(null)}
-          />
-        </div>
-      )
-    }
-  }
+  const { slots } = layout
 
   const getGridClasses = (p: Exclude<PresetId, 'auto'>) => {
     switch (p) {
@@ -128,8 +112,6 @@ export const LayoutGrid: React.FC = () => {
             <TerminalPane
               key={session.id}
               session={session}
-              isMaximized={false}
-              onToggleMaximize={() => maximizeSession(session.id)}
             />
           )
         }
