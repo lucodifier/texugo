@@ -67,7 +67,7 @@ export function defaultSettings(homeDir: string): Settings {
 }
 
 export function defaultProjectLayout() {
-  return emptyLayout('1')
+  return emptyLayout('auto')
 }
 
 export const SHORTCUTS: { keys: string; action: string }[] = [

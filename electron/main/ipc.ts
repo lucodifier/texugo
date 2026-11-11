@@ -67,7 +67,7 @@ export function registerIpc(host: Host): void {
       name: validateProjectName(input.name),
       cwd: assertDirectory(input.cwd),
       color: validateColor(input.color),
-      layout: emptyLayout('1'),
+      layout: emptyLayout('auto'),
       createdAt: Date.now(),
       updatedAt: Date.now()
     }
@@ -111,13 +111,12 @@ export function registerIpc(host: Host): void {
     const workspace = payload as WorkspaceState
     const projects = new Set(host.db.listProjects().map((project) => project.id))
     const allSessionIds = host.db.listSessions().map((s) => s.id)
-    const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
     const next: WorkspaceState = {
       openProjectIds: workspace.openProjectIds.filter((id) => projects.has(id)),
       activeProjectId:
         workspace.activeProjectId && projects.has(workspace.activeProjectId) ? workspace.activeProjectId : null,
       focusedSessionId: workspace.focusedSessionId,
-      layout: normalizeLayout(workspace.layout || emptyLayout(defaultPreset), allSessionIds)
+      layout: normalizeLayout(workspace.layout || emptyLayout('auto'), allSessionIds)
     }
     host.db.saveWorkspace(next)
     return next
@@ -455,8 +454,7 @@ function place(host: Host, session: SessionRecord): void {
 
   const workspace = host.db.getWorkspace()
   const allSessionIds = host.db.listSessions().map((s) => s.id)
-  const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
-  const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+  const baseLayout = workspace.layout || emptyLayout('auto')
   workspace.layout = focusSessionInLayout(baseLayout, session.id, allSessionIds)
   host.db.saveWorkspace(workspace)
 }
@@ -491,8 +489,7 @@ function cleanWorkspace(host: Host): WorkspaceState {
   const workspace = host.db.getWorkspace()
   const projects = new Set(host.db.listProjects().map((project) => project.id))
   const allSessionIds = host.db.listSessions().map((s) => s.id)
-  const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
-  const layout = normalizeLayout(workspace.layout || emptyLayout(defaultPreset), allSessionIds)
+  const layout = normalizeLayout(workspace.layout || emptyLayout('auto'), allSessionIds)
   return {
     openProjectIds: workspace.openProjectIds.filter((id) => projects.has(id)),
     activeProjectId:

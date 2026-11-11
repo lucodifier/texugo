@@ -41,6 +41,11 @@ export const Header: React.FC = () => {
   }, [activeProject?.cwd])
 
   const presets: { id: PresetId; label: string; icon: React.ReactNode }[] = [
+    {
+      id: 'auto',
+      label: 'Automático (Adapta à quantidade de terminais)',
+      icon: <span className="text-[9px] font-bold px-1 font-mono tracking-tighter">AUTO</span>
+    },
     { id: '1', label: '1 Painel', icon: <div className="w-3.5 h-3.5 border border-current rounded-sm" /> },
     {
       id: '2h',
@@ -61,8 +66,18 @@ export const Header: React.FC = () => {
       )
     },
     {
+      id: '3',
+      label: '3 Painéis (Lado a Lado)',
+      icon: (
+        <div className="w-3.5 h-3.5 border border-current rounded-sm flex">
+          <div className="w-1/3 border-r border-current" />
+          <div className="w-1/3 border-r border-current" />
+        </div>
+      )
+    },
+    {
       id: '4',
-      label: '4 Painéis',
+      label: '4 Painéis (Grade 2x2)',
       icon: (
         <div className="w-3.5 h-3.5 border border-current rounded-sm grid grid-cols-2 grid-rows-2">
           <div className="border-r border-b border-current" />
@@ -74,7 +89,7 @@ export const Header: React.FC = () => {
     },
     {
       id: '6',
-      label: '6 Painéis',
+      label: '6 Painéis (Grade 3x2)',
       icon: (
         <div className="w-3.5 h-3.5 border border-current rounded-sm grid grid-cols-3 grid-rows-2">
           <div className="border-r border-b border-current" />
@@ -88,7 +103,7 @@ export const Header: React.FC = () => {
     },
     {
       id: '8',
-      label: '8 Painéis',
+      label: '8 Painéis (Grade 4x2)',
       icon: (
         <div className="w-3.5 h-3.5 border border-current rounded-sm grid grid-cols-4 grid-rows-2">
           <div className="border-r border-b border-current" />
@@ -106,7 +121,7 @@ export const Header: React.FC = () => {
 
   const currentPreset = activeProject
     ? activeProject.layout.preset
-    : workspace.layout?.preset || (sessions.length > 1 ? '2h' : '1')
+    : workspace.layout?.preset || 'auto'
 
   return (
     <header className="h-11 bg-[#12161f] border-b border-[#1e2330] flex items-center justify-between px-3 select-none">

@@ -3,7 +3,7 @@ import { Plus, Terminal as TerminalIcon } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 import { TerminalPane } from '../features/terminal/TerminalPane'
 import { TexugoIcon } from './TexugoIcon'
-import { emptyLayout } from '@shared/layout'
+import { emptyLayout, PRESETS, autoPresetForCount } from '@shared/layout'
 import type { PresetId } from '@shared/types'
 
 export const LayoutGrid: React.FC = () => {
@@ -39,13 +39,21 @@ export const LayoutGrid: React.FC = () => {
     ? projects.find((p) => p.id === workspace.activeProjectId)
     : null
 
-  // If viewing a single project tab, use its layout. Otherwise use multi-project workspace layout!
-  const defaultPreset = sessions.length > 1 ? '2h' : '1'
+  // Target sessions in the current view
+  const targetSessions = activeProject
+    ? sessions.filter((s) => s.projectId === activeProject.id)
+    : sessions
+
   const layout = activeProject
     ? activeProject.layout
-    : workspace.layout || emptyLayout(defaultPreset)
+    : workspace.layout || emptyLayout('auto')
 
-  const { preset, slots, maximizedSessionId } = layout
+  const isAuto = layout.preset === 'auto'
+  const effectivePreset: Exclude<PresetId, 'auto'> = isAuto
+    ? autoPresetForCount(targetSessions.length)
+    : (layout.preset as Exclude<PresetId, 'auto'>)
+
+  const { slots, maximizedSessionId } = layout
 
   // Maximized terminal mode
   if (maximizedSessionId) {
@@ -63,7 +71,7 @@ export const LayoutGrid: React.FC = () => {
     }
   }
 
-  const getGridClasses = (p: PresetId) => {
+  const getGridClasses = (p: Exclude<PresetId, 'auto'>) => {
     switch (p) {
       case '1':
         return 'grid-cols-1 grid-rows-1'
@@ -71,6 +79,8 @@ export const LayoutGrid: React.FC = () => {
         return 'grid-cols-2 grid-rows-1'
       case '2v':
         return 'grid-cols-1 grid-rows-2'
+      case '3':
+        return 'grid-cols-3 grid-rows-1'
       case '4':
         return 'grid-cols-2 grid-rows-2'
       case '6':
@@ -82,19 +92,34 @@ export const LayoutGrid: React.FC = () => {
     }
   }
 
-  const slotCount = {
-    '1': 1,
-    '2h': 2,
-    '2v': 2,
-    '4': 4,
-    '6': 6,
-    '8': 8
-  }[preset] || 1
+  const slotCount = PRESETS[effectivePreset]?.count || 1
 
-  const activeSlots = slots.slice(0, slotCount)
+  // In auto mode, only display actual active sessions without empty placeholder boxes!
+  // In fixed mode, display slots with empty boxes as requested by the user.
+  const activeSlots = isAuto
+    ? targetSessions.map((s) => s.id)
+    : slots.slice(0, slotCount)
+
+  // If no sessions exist in current view
+  if (activeSlots.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-[#0c0e12] p-8 text-center select-none">
+        <div
+          onClick={() => setNewSessionModal(true)}
+          className="flex flex-col items-center p-8 border border-dashed border-[#222a3a] hover:border-[#3dd6c6]/50 rounded-lg bg-[#11151f] hover:bg-[#151a26] transition cursor-pointer max-w-sm"
+        >
+          <div className="p-3.5 rounded-full bg-[#1b2230] text-[#3dd6c6] mb-3">
+            <Plus size={24} />
+          </div>
+          <span className="text-sm font-semibold text-white mb-1">Abrir Primeiro Terminal</span>
+          <span className="text-xs text-[#6e7d91]">Clique para iniciar um agente neste projeto</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className={`flex-1 p-2 bg-[#0c0e12] grid gap-2 overflow-hidden ${getGridClasses(preset)}`}>
+    <div className={`flex-1 p-2 bg-[#0c0e12] grid gap-2 overflow-hidden ${getGridClasses(effectivePreset)}`}>
       {activeSlots.map((sessionId, index) => {
         const session = sessionId ? sessions.find((s) => s.id === sessionId) : null
 

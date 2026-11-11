@@ -68,4 +68,18 @@ describe('Layout Engine', () => {
     expect(normalized.slots[0]).toBe('valid-1')
     expect(normalized.slots[1]).toBeNull()
   })
+
+  it('supports auto preset and dynamically adapts to sessions count', () => {
+    const layout = emptyLayout('auto')
+    expect(layout.preset).toBe('auto')
+
+    const with1 = normalizeLayout(layout, ['s1'])
+    expect(with1.slots).toEqual(['s1'])
+
+    const with2 = normalizeLayout(layout, ['s1', 's2'])
+    expect(with2.slots).toEqual(['s1', 's2'])
+
+    const with3 = normalizeLayout(layout, ['s1', 's2', 's3'])
+    expect(with3.slots).toEqual(['s1', 's2', 's3'])
+  })
 })

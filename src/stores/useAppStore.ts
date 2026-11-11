@@ -204,8 +204,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     } else {
       // Global multi-project workspace layout
       const allSessionIds = sessions.map((s) => s.id)
-      const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
-      const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+      const baseLayout = workspace.layout || emptyLayout('auto')
       const updatedLayout = setPreset(baseLayout, preset, allSessionIds)
       const nextWorkspace = { ...workspace, layout: updatedLayout }
       set({ workspace: nextWorkspace })
@@ -231,8 +230,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
     } else {
       const allSessionIds = sessions.map((s) => s.id)
-      const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
-      const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+      const baseLayout = workspace.layout || emptyLayout('auto')
       const slots = [...baseLayout.slots]
       slots[slotIndex] = sessionId
       const updatedLayout = { ...baseLayout, slots }
@@ -260,8 +258,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       await ipc.updateProject({ id: updatedProject.id, layout: updatedLayout })
     } else {
       const allSessionIds = sessions.map((s) => s.id)
-      const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
-      const baseLayout = workspace.layout || emptyLayout(defaultPreset)
+      const baseLayout = workspace.layout || emptyLayout('auto')
       const currentMax = baseLayout.maximizedSessionId
       const nextMax = currentMax === sessionId ? null : sessionId
       const updatedLayout = { ...baseLayout, maximizedSessionId: nextMax }
@@ -292,8 +289,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     // Always place into the multi-project workspace layout as well
     const allSessionIds = [...sessions.map((s) => s.id), session.id]
-    const defaultPreset = allSessionIds.length > 1 ? '2h' : '1'
-    const baseWLayout = workspace.layout || emptyLayout(defaultPreset)
+    const baseWLayout = workspace.layout || emptyLayout('auto')
     const updatedWLayout = focusSessionInLayout(baseWLayout, session.id, allSessionIds)
 
     set({

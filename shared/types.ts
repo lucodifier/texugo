@@ -6,7 +6,7 @@ export type Attention = 'idle' | null
 
 export type ResumeKind = 'none' | 'claude' | 'codex'
 
-export type PresetId = '1' | '2h' | '2v' | '4' | '6' | '8'
+export type PresetId = 'auto' | '1' | '2h' | '2v' | '3' | '4' | '6' | '8'
 
 export type RendererMode = 'canvas' | 'webgl' | 'dom'
 
