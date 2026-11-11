@@ -1,6 +1,6 @@
 # 🦡 Texugo - Estado Atual da Versão
 
-**Data de Atualização:** 11 de Novembro de 2026, 11:20 (Horário de Brasília)  
+**Data de Atualização:** 11 de Novembro de 2026, 11:25 (Horário de Brasília)  
 **Repositório:** `C:\codes\CodeHolistic\TexugoIA`  
 **Branch:** `master`  
 **Executáveis gerados e prontos para teste:**
@@ -29,7 +29,8 @@ O **Texugo** é um desktop manager local em Electron + React + Tailwind + xterm 
 | **8** | **Número 1 com bolinha verde ao lado do projeto na sidebar** | Removido completamente o contador de terminais ao lado do nome do projeto, deixando a lista visualmente limpa e moderna. | `src/components/Sidebar.tsx` |
 | **9** | **Espaçamento e descompasso de cursor ao digitar no prompt (`>e  ntao`)** | Instalado e ativado o `@xterm/addon-unicode11` (substituindo o Unicode 6 legado pelo Unicode 11); habilitado `windowsPty` com heurísticas nativas do ConPTY para Windows; empacotado o `OpenConsole.exe` moderno v1.23 do Windows Terminal com `useConptyDll: true` para eliminar drift de coordenadas em caracteres Unicode como `❯`. | `package.json`, `src/features/terminal/terminal-registry.ts`, `electron/terminal/pty-manager.ts`, `scripts/patch-node-pty.mjs` |
 | **10** | **Suporte a Freebuff, Codex, Windows Terminal e Gerenciamento nas Configurações (Problema 2)** | Adicionados **Freebuff** (`Fb`), **Codex** (`Cx`), **Windows Terminal (Bash)** (`WT`) e **Git Bash** (`Ba`); criada aba de gerenciamento em Configurações com toggle On/Off, edição e cadastro de terminais. | `shared/types.ts`, `shared/defaults.ts`, `electron/main/database.ts`, `electron/terminal/command-resolve.ts`, `src/features/settings/SettingsModal.tsx`, `src/features/agents/AgentModal.tsx`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `src/features/sessions/NewSessionModal.tsx` |
-| **11** | **Terminal travado em "[processo encerrado com código 0]" ao dar Ctrl+C (Problema 3)** | 1. **Auto-Handoff para o Terminal Padrão:** Ao sair de um agente (como Claude Code, Freebuff, Codex) via Ctrl+C ou exit, a sessão reinicia automaticamente no mesmo painel com o shell/terminal padrão (`settings.defaultAgentId`, ex: Git Bash ou PowerShell) na mesma pasta.<br>2. **Despertar via Teclado:** Pressionar `Enter` no terminal em estado `exited` imediatamente acorda a janela com o terminal padrão.<br>3. **Botões de Ação na Toolbar e Banner Flutuante:** Adicionados botões dedicados `Terminal Padrão` e `Retomar`, além de fechamento instantâneo se o shell padrão sair com `exit`. | `electron/main/ipc.ts`, `src/services/ipc.ts`, `src/stores/useAppStore.ts`, `src/features/terminal/terminal-registry.ts`, `src/features/terminal/TerminalPane.tsx` |
+| **11** | **Terminal travado em "[processo encerrado com código 0]" ao dar Ctrl+C (Problema 3)** | Auto-handoff imediato para o terminal padrão ao encerrar agente com Ctrl+C; despertar por tecla `Enter`; botões na barra superior e banner flutuante; auto-fechamento ao digitar `exit` no shell padrão. | `electron/main/ipc.ts`, `src/services/ipc.ts`, `src/stores/useAppStore.ts`, `src/features/terminal/terminal-registry.ts`, `src/features/terminal/TerminalPane.tsx` |
+| **12** | **Terminal ocupando só metade da tela com espaço vazio na direita (Problema 4)** | Quando há apenas 1 terminal aberto, o layout agora **força 100% da largura e altura** (`grid-cols-1 grid-rows-1`), ocupando a janela inteira sem deixar nenhuma coluna ou espaço preto vazio. A tela se divide apenas quando houver 2 ou mais terminais abertos. | `src/components/LayoutGrid.tsx` |
 
 ---
 

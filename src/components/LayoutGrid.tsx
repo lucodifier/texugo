@@ -49,7 +49,12 @@ export const LayoutGrid: React.FC = () => {
     : workspace.layout || emptyLayout('auto')
 
   const isAuto = layout.preset === 'auto'
-  const effectivePreset: Exclude<PresetId, 'auto'> = isAuto
+  // Quando há apenas 1 terminal aberto (ou nenhum), ele SEMPRE ocupa 100% da janela (tela toda)
+  const isSingle = targetSessions.length <= 1
+
+  const effectivePreset: Exclude<PresetId, 'auto'> = isSingle
+    ? '1'
+    : isAuto
     ? autoPresetForCount(targetSessions.length)
     : (layout.preset as Exclude<PresetId, 'auto'>)
 
@@ -78,11 +83,10 @@ export const LayoutGrid: React.FC = () => {
 
   const slotCount = PRESETS[effectivePreset]?.count || 1
 
-  // In auto mode, only display actual active sessions without empty placeholder boxes!
-  // In fixed mode, display slots with empty boxes as requested by the user.
-  const activeSlots = isAuto
+  // Quando há apenas 1 sessão ou em modo auto, exibe apenas os terminais ativos preenchendo a tela inteira!
+  const activeSlots = (isSingle || isAuto)
     ? targetSessions.map((s) => s.id)
-    : slots.slice(0, slotCount)
+    : Array.from({ length: slotCount }, (_, i) => slots[i] ?? targetSessions[i]?.id ?? null)
 
   // If no sessions exist in current view
   if (activeSlots.length === 0) {
