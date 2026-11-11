@@ -182,7 +182,12 @@ class TerminalRegistry {
         brightCyan: '#20c997',
         brightWhite: '#ffffff'
       },
-      allowTransparency: false
+      allowTransparency: false,
+      linkHandler: {
+        activate: (_event, text) => {
+          ipc.openExternal(text)
+        }
+      }
     }
 
     const term = new Terminal(termOptions)
