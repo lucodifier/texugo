@@ -22,13 +22,17 @@ export interface TerminalEntry {
 
 let lastPaste = {
   sessionId: '',
-  text: '',
+  normalized: '',
   time: 0
+}
+
+function normalizePaste(text: string): string {
+  return text.replace(/\r\n/g, '\n').trim()
 }
 
 /**
  * Pastes text through xterm.js (handles bracketed paste mode, CRLF, and emits onData)
- * Deduplicates identical paste calls within 300ms to avoid double-pasting.
+ * Deduplicates identical paste calls within 500ms to avoid double-pasting.
  */
 function pasteToTerminal(term: Terminal, sessionId: string, text?: string) {
   let toPaste = text
@@ -57,16 +61,17 @@ function pasteToTerminal(term: Terminal, sessionId: string, text?: string) {
 
   if (!toPaste) return
 
-  // Deduplication: prevent the same text from being pasted twice within 300ms to the same session
+  // Deduplication: prevent the same text from being pasted twice within 500ms to the same session
+  const normalized = normalizePaste(toPaste)
   const now = Date.now()
   if (
     lastPaste.sessionId === sessionId &&
-    lastPaste.text === toPaste &&
-    now - lastPaste.time < 300
+    lastPaste.normalized === normalized &&
+    now - lastPaste.time < 500
   ) {
     return
   }
-  lastPaste = { sessionId, text: toPaste, time: now }
+  lastPaste = { sessionId, normalized, time: now }
 
   try {
     term.paste(toPaste)
@@ -205,8 +210,23 @@ class TerminalRegistry {
     element.className = 'w-full h-full select-text'
     term.open(element)
 
-    // Forward terminal keypresses to PTY
+    // Forward terminal keypresses to PTY with duplicate burst protection
+    let lastDataSent = { text: '', time: 0 }
     term.onData((input) => {
+      const now = Date.now()
+      // Guard against identical multi-character text bursts sent within 400ms
+      // (Protects against Wispr Flow or OS double-paste / double-injection)
+      if (
+        input.length > 2 &&
+        !input.startsWith('\x1b') &&
+        input === lastDataSent.text &&
+        now - lastDataSent.time < 400
+      ) {
+        return
+      }
+      if (input.length > 2 && !input.startsWith('\x1b')) {
+        lastDataSent = { text: input, time: now }
+      }
       ipc.writeSession(sessionId, input)
     })
 
