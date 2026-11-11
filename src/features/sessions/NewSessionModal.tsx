@@ -217,26 +217,28 @@ export const NewSessionModal: React.FC = () => {
 
         {!isCustom ? (
           <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto">
-            {agents.map((agent) => (
-              <button
-                key={agent.id}
-                onClick={() => handleLaunchAgent(agent.id)}
-                className="flex items-center gap-2.5 p-2.5 rounded bg-[#0c0e12] border border-[#1e2536] hover:border-[#3dd6c6] text-left transition group"
-              >
-                <span
-                  className="w-7 h-7 rounded flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                  style={{ backgroundColor: agent.color || '#3dd6c6' }}
+            {agents
+              .filter((a) => a.enabled !== false)
+              .map((agent) => (
+                <button
+                  key={agent.id}
+                  onClick={() => handleLaunchAgent(agent.id)}
+                  className="flex items-center gap-2.5 p-2.5 rounded bg-[#0c0e12] border border-[#1e2536] hover:border-[#3dd6c6] text-left transition group"
                 >
-                  {agent.icon}
-                </span>
-                <div className="truncate">
-                  <div className="text-xs font-medium text-white group-hover:text-[#3dd6c6] truncate">
-                    {agent.name}
+                  <span
+                    className="w-7 h-7 rounded flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
+                    style={{ backgroundColor: agent.color || '#3dd6c6' }}
+                  >
+                    {agent.icon}
+                  </span>
+                  <div className="truncate">
+                    <div className="text-xs font-medium text-white group-hover:text-[#3dd6c6] truncate">
+                      {agent.name}
+                    </div>
+                    <div className="text-[10px] text-[#6e7d91] font-mono truncate">{agent.command}</div>
                   </div>
-                  <div className="text-[10px] text-[#6e7d91] font-mono truncate">{agent.command}</div>
-                </div>
-              </button>
-            ))}
+                </button>
+              ))}
           </div>
         ) : (
           <form onSubmit={handleLaunchCustom} className="space-y-3">

@@ -77,7 +77,8 @@ export class AppDatabase {
         color TEXT NOT NULL,
         resume_kind TEXT NOT NULL,
         idle_pattern TEXT NOT NULL DEFAULT '',
-        builtin INTEGER NOT NULL
+        builtin INTEGER NOT NULL,
+        enabled INTEGER NOT NULL DEFAULT 1
       );
       CREATE TABLE IF NOT EXISTS sessions (
         id TEXT PRIMARY KEY,
@@ -101,6 +102,9 @@ export class AppDatabase {
         value_json TEXT NOT NULL
       );
     `)
+    try {
+      this.db.run('ALTER TABLE agents ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1')
+    } catch {}
     this.persist()
   }
 
@@ -147,8 +151,8 @@ export class AppDatabase {
 
   upsertAgent(agent: AgentProfile): void {
     this.db.run(
-      `INSERT INTO agents (id, name, command, args_json, cwd, env_json, icon, color, resume_kind, idle_pattern, builtin)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO agents (id, name, command, args_json, cwd, env_json, icon, color, resume_kind, idle_pattern, builtin, enabled)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          name = excluded.name,
          command = excluded.command,
@@ -159,7 +163,8 @@ export class AppDatabase {
          color = excluded.color,
          resume_kind = excluded.resume_kind,
          idle_pattern = excluded.idle_pattern,
-         builtin = excluded.builtin`,
+         builtin = excluded.builtin,
+         enabled = excluded.enabled`,
       [
         agent.id,
         agent.name,
@@ -171,7 +176,8 @@ export class AppDatabase {
         agent.color,
         agent.resumeKind,
         agent.idlePattern,
-        agent.builtin ? 1 : 0
+        agent.builtin ? 1 : 0,
+        agent.enabled !== false ? 1 : 0
       ]
     )
     this.persist()
@@ -317,7 +323,8 @@ export class AppDatabase {
       color: String(row.color),
       resumeKind: row.resume_kind as AgentProfile['resumeKind'],
       idlePattern: String(row.idle_pattern ?? ''),
-      builtin: Number(row.builtin) === 1
+      builtin: Number(row.builtin) === 1,
+      enabled: row.enabled == null ? true : Number(row.enabled) === 1
     }
   }
 
@@ -425,6 +432,7 @@ export function agentFromInput(input: AgentInput, builtin = false): AgentProfile
     color: input.color,
     resumeKind: input.resumeKind,
     idlePattern: input.idlePattern,
-    builtin
+    builtin,
+    enabled: input.enabled !== false
   }
 }

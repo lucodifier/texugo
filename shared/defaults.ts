@@ -17,12 +17,13 @@ export function defaultAgents(): AgentProfile[] {
     agent('claude', 'Claude Code', 'claude', 'Cl', '#d4a574', 'claude'),
     agent('freebuff', 'Freebuff', 'freebuff', 'Fb', '#00e599', 'none'),
     agent('codex', 'Codex', 'codex', 'Cx', '#10a37f', 'codex'),
-    agent('opencode', 'OpenCode', 'opencode', 'Oc', '#7c9cff', 'none'),
-    agent('cursor', 'Cursor', 'cursor-agent', 'Cu', '#c4b5fd', 'none'),
-    agent('gemini', 'Gemini CLI', 'gemini', 'Ge', '#7ec8ff', 'none'),
+    agent('windows-terminal', 'Windows Terminal (Bash)', 'wt.exe', 'WT', '#4cc2ff', 'none', ['-p', 'Git Bash']),
+    agent('git-bash', 'Git Bash', 'bash.exe', 'Ba', '#e08a6a', 'none', ['--login', '-i']),
     agent('powershell', 'PowerShell', 'powershell.exe', 'PS', '#4fc1ff', 'none', ['-NoLogo']),
     agent('cmd', 'CMD', 'cmd.exe', 'CM', '#c8c8c8', 'none'),
-    agent('git-bash', 'Git Bash', 'bash.exe', 'Ba', '#e08a6a', 'none', ['--login', '-i'])
+    agent('opencode', 'OpenCode', 'opencode', 'Oc', '#7c9cff', 'none'),
+    agent('cursor', 'Cursor', 'cursor-agent', 'Cu', '#c4b5fd', 'none'),
+    agent('gemini', 'Gemini CLI', 'gemini', 'Ge', '#7ec8ff', 'none')
   ]
 }
 
@@ -33,7 +34,8 @@ function agent(
   icon: string,
   color: string,
   resumeKind: AgentProfile['resumeKind'],
-  args: string[] = []
+  args: string[] = [],
+  enabled: boolean = true
 ): AgentProfile {
   return {
     id,
@@ -46,7 +48,8 @@ function agent(
     color,
     resumeKind,
     idlePattern: '',
-    builtin: true
+    builtin: true,
+    enabled
   }
 }
 

@@ -16,6 +16,7 @@ export const AgentModal: React.FC = () => {
   const [color, setColor] = useState(PROJECT_COLORS[0])
   const [resumeKind, setResumeKind] = useState<ResumeKind>('none')
   const [idlePattern, setIdlePattern] = useState('')
+  const [enabled, setEnabled] = useState(true)
   const [error, setError] = useState('')
   const [isFormOpen, setIsFormOpen] = useState(false)
 
@@ -30,6 +31,7 @@ export const AgentModal: React.FC = () => {
     setColor(PROJECT_COLORS[Math.floor(Math.random() * PROJECT_COLORS.length)])
     setResumeKind('none')
     setIdlePattern('')
+    setEnabled(true)
     setError('')
     setIsFormOpen(true)
   }
@@ -43,13 +45,21 @@ export const AgentModal: React.FC = () => {
     setColor(agent.color)
     setResumeKind(agent.resumeKind)
     setIdlePattern(agent.idlePattern || '')
+    setEnabled(agent.enabled !== false)
     setError('')
     setIsFormOpen(true)
   }
 
+  const handleToggle = async (agent: AgentProfile) => {
+    await saveAgent({
+      ...agent,
+      enabled: agent.enabled === false ? true : false
+    })
+  }
+
   const handleDelete = async (agent: AgentProfile) => {
     if (agent.builtin) {
-      alert('Perfis padrão do sistema não podem ser excluídos.')
+      alert('Perfis padrão do sistema não podem ser excluídos. Você pode desabilitá-los se preferir não utilizá-los.')
       return
     }
     if (confirm(`Excluir perfil "${agent.name}"?`)) {
@@ -70,15 +80,16 @@ export const AgentModal: React.FC = () => {
     try {
       await saveAgent({
         id: editingId || undefined,
-        name,
-        command,
+        name: name.trim(),
+        command: command.trim(),
         args: parsedArgs,
         cwd: null,
         env: {},
-        icon: icon || name.slice(0, 2).toUpperCase(),
+        icon: icon.trim() || name.trim().slice(0, 2).toUpperCase(),
         color,
         resumeKind,
-        idlePattern
+        idlePattern,
+        enabled
       })
       setIsFormOpen(false)
     } catch (e: any) {
@@ -115,8 +126,8 @@ export const AgentModal: React.FC = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Claude Code"
-                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs outline-none"
+                    placeholder="Claude Code, Codex, etc."
+                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs outline-none focus:border-[#3dd6c6]"
                     autoFocus
                   />
                 </div>
@@ -126,8 +137,8 @@ export const AgentModal: React.FC = () => {
                     type="text"
                     value={command}
                     onChange={(e) => setCommand(e.target.value)}
-                    placeholder="claude"
-                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs font-mono outline-none"
+                    placeholder="claude, codex, wt.exe, bash.exe"
+                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs font-mono outline-none focus:border-[#3dd6c6]"
                   />
                 </div>
               </div>
@@ -140,7 +151,7 @@ export const AgentModal: React.FC = () => {
                     value={args}
                     onChange={(e) => setArgs(e.target.value)}
                     placeholder="--dangerously-skip-permissions"
-                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs font-mono outline-none"
+                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs font-mono outline-none focus:border-[#3dd6c6]"
                   />
                 </div>
                 <div>
@@ -148,7 +159,7 @@ export const AgentModal: React.FC = () => {
                   <select
                     value={resumeKind}
                     onChange={(e) => setResumeKind(e.target.value as ResumeKind)}
-                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs outline-none"
+                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs outline-none focus:border-[#3dd6c6]"
                   >
                     <option value="none">Nenhum (processo padrão)</option>
                     <option value="claude">Claude Code (--resume / --continue)</option>
@@ -157,7 +168,7 @@ export const AgentModal: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 items-center">
                 <div>
                   <label className="block text-xs text-[#8e9aa8] mb-1">Sigla / Ícone (2 letras)</label>
                   <input
@@ -166,7 +177,7 @@ export const AgentModal: React.FC = () => {
                     value={icon}
                     onChange={(e) => setIcon(e.target.value)}
                     placeholder="Cl"
-                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs outline-none"
+                    className="w-full px-2.5 py-1.5 rounded bg-[#151922] border border-[#273144] text-white text-xs outline-none focus:border-[#3dd6c6]"
                   />
                 </div>
                 <div>
@@ -185,6 +196,18 @@ export const AgentModal: React.FC = () => {
                     ))}
                   </div>
                 </div>
+              </div>
+
+              <div className="pt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-xs text-[#cfd6e0]">
+                  <input
+                    type="checkbox"
+                    checked={enabled}
+                    onChange={(e) => setEnabled(e.target.checked)}
+                    className="rounded border-[#273144] text-[#3dd6c6]"
+                  />
+                  <span>Habilitado (visível no aplicativo)</span>
+                </label>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-[#222a3a]">
@@ -217,46 +240,76 @@ export const AgentModal: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                {agents.map((agent) => (
-                  <div
-                    key={agent.id}
-                    className="flex items-center justify-between p-2.5 rounded bg-[#0c0e12] border border-[#1e2536] hover:border-[#283248] transition"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0 mr-2">
-                      <span
-                        className="w-6 h-6 rounded flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
-                        style={{ backgroundColor: agent.color || '#3dd6c6' }}
-                      >
-                        {agent.icon}
-                      </span>
-                      <div className="truncate">
-                        <div className="text-xs font-medium text-white truncate">{agent.name}</div>
-                        <div className="text-[10px] text-[#6e7d91] font-mono truncate">
-                          {agent.command} {agent.args.join(' ')}
+                {agents.map((agent) => {
+                  const isEnabled = agent.enabled !== false
+                  return (
+                    <div
+                      key={agent.id}
+                      className={`flex items-center justify-between p-2.5 rounded border transition ${
+                        isEnabled
+                          ? 'bg-[#0c0e12] border-[#1e2536] hover:border-[#283248]'
+                          : 'bg-[#0c0e12]/40 border-[#181d29] opacity-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0 mr-2">
+                        <span
+                          className="w-6 h-6 rounded flex items-center justify-center font-bold text-xs text-black flex-shrink-0"
+                          style={{ backgroundColor: agent.color || '#3dd6c6' }}
+                        >
+                          {agent.icon}
+                        </span>
+                        <div className="truncate">
+                          <div className="text-xs font-medium text-white truncate flex items-center gap-1.5">
+                            <span>{agent.name}</span>
+                            {!isEnabled && (
+                              <span className="text-[9px] px-1 rounded bg-[#273144] text-[#8e9aa8]">
+                                Desativado
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-[#6e7d91] font-mono truncate">
+                            {agent.command} {agent.args.join(' ')}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <button
-                        onClick={() => handleStartEdit(agent)}
-                        className="p-1 text-[#6e7d91] hover:text-white"
-                        title="Editar"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      {!agent.builtin && (
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {/* Toggle button */}
                         <button
-                          onClick={() => handleDelete(agent)}
-                          className="p-1 text-[#6e7d91] hover:text-red-400"
-                          title="Excluir"
+                          type="button"
+                          onClick={() => handleToggle(agent)}
+                          title={isEnabled ? 'Desativar perfil' : 'Ativar perfil'}
+                          className={`w-7 h-4 flex items-center rounded-full p-0.5 transition-colors ${
+                            isEnabled ? 'bg-[#3dd6c6]' : 'bg-[#273144]'
+                          }`}
                         >
-                          <Trash2 size={13} />
+                          <div
+                            className={`bg-white w-3 h-3 rounded-full shadow-md transform transition-transform ${
+                              isEnabled ? 'translate-x-3' : 'translate-x-0'
+                            }`}
+                          />
                         </button>
-                      )}
+
+                        <button
+                          onClick={() => handleStartEdit(agent)}
+                          className="p-1 text-[#6e7d91] hover:text-white"
+                          title="Editar"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        {!agent.builtin && (
+                          <button
+                            onClick={() => handleDelete(agent)}
+                            className="p-1 text-[#6e7d91] hover:text-red-400"
+                            title="Excluir"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

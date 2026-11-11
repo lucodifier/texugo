@@ -156,44 +156,92 @@ export const Sidebar: React.FC = () => {
                     {/* Actions visible on hover */}
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
                       {/* Quick Launch: Claude Code */}
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation()
-                          const claudeAgent = agents.find((a) => a.command.includes('claude') || a.id === 'claude') || agents[0]
-                          if (claudeAgent) {
-                            await createSession({
-                              projectId: project.id,
-                              agentId: claudeAgent.id,
-                              cwd: project.cwd
-                            })
-                          }
-                        }}
-                        title="Abrir terminal Claude Code nesta pasta"
-                        className="px-1 py-0.5 rounded text-[10px] font-bold text-[#d4a574] hover:bg-[#d4a574]/20 transition"
-                      >
-                        Cl
-                      </button>
+                      {(() => {
+                        const claudeAgent = agents.find((a) => (a.command.includes('claude') || a.id === 'claude') && a.enabled !== false)
+                        if (!claudeAgent) return null
+                        return (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await createSession({
+                                projectId: project.id,
+                                agentId: claudeAgent.id,
+                                cwd: project.cwd
+                              })
+                            }}
+                            title="Abrir terminal Claude Code nesta pasta"
+                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#d4a574] hover:bg-[#d4a574]/20 transition"
+                          >
+                            Cl
+                          </button>
+                        )
+                      })()}
 
                       {/* Quick Launch: Freebuff */}
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation()
-                          const fbAgent = agents.find((a) => a.command.includes('freebuff') || a.id === 'freebuff')
-                          if (fbAgent) {
-                            await createSession({
-                              projectId: project.id,
-                              agentId: fbAgent.id,
-                              cwd: project.cwd
-                            })
-                          } else {
-                            setNewSessionModal(true)
-                          }
-                        }}
-                        title="Abrir terminal Freebuff nesta pasta"
-                        className="px-1 py-0.5 rounded text-[10px] font-bold text-[#00e599] hover:bg-[#00e599]/20 transition"
-                      >
-                        Fb
-                      </button>
+                      {(() => {
+                        const fbAgent = agents.find((a) => (a.command.includes('freebuff') || a.id === 'freebuff') && a.enabled !== false)
+                        if (!fbAgent) return null
+                        return (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await createSession({
+                                projectId: project.id,
+                                agentId: fbAgent.id,
+                                cwd: project.cwd
+                              })
+                            }}
+                            title="Abrir terminal Freebuff nesta pasta"
+                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#00e599] hover:bg-[#00e599]/20 transition"
+                          >
+                            Fb
+                          </button>
+                        )
+                      })()}
+
+                      {/* Quick Launch: Codex */}
+                      {(() => {
+                        const codexAgent = agents.find((a) => (a.command.includes('codex') || a.id === 'codex') && a.enabled !== false)
+                        if (!codexAgent) return null
+                        return (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await createSession({
+                                projectId: project.id,
+                                agentId: codexAgent.id,
+                                cwd: project.cwd
+                              })
+                            }}
+                            title="Abrir terminal Codex nesta pasta"
+                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#10a37f] hover:bg-[#10a37f]/20 transition"
+                          >
+                            Cx
+                          </button>
+                        )
+                      })()}
+
+                      {/* Quick Launch: Windows Terminal / Bash */}
+                      {(() => {
+                        const wtAgent = agents.find((a) => (a.id === 'windows-terminal' || a.command === 'wt.exe') && a.enabled !== false)
+                        if (!wtAgent) return null
+                        return (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await createSession({
+                                projectId: project.id,
+                                agentId: wtAgent.id,
+                                cwd: project.cwd
+                              })
+                            }}
+                            title="Abrir Windows Terminal (Bash) nesta pasta"
+                            className="px-1 py-0.5 rounded text-[10px] font-bold text-[#4cc2ff] hover:bg-[#4cc2ff]/20 transition"
+                          >
+                            WT
+                          </button>
+                        )
+                      })()}
 
                       {/* Pick another agent / custom */}
                       <button

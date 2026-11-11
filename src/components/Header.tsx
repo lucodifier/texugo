@@ -248,45 +248,84 @@ export const Header: React.FC = () => {
         )}
 
         {/* Quick Launch Buttons for Active Project */}
-        {activeProject && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={async () => {
-                const claudeAgent = agents.find((a) => a.command.includes('claude') || a.id === 'claude')
-                if (claudeAgent) {
-                  await createSession({
-                    projectId: activeProject.id,
-                    agentId: claudeAgent.id,
-                    cwd: activeProject.cwd
-                  })
-                }
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#d4a574]/40 text-[#d4a574] text-xs font-semibold transition"
-              title={`Iniciar Claude Code em ${activeProject.name}`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574]" />
-              <span>Claude</span>
-            </button>
+        {activeProject && (() => {
+          const claudeAgent = agents.find((a) => (a.command.includes('claude') || a.id === 'claude') && a.enabled !== false)
+          const fbAgent = agents.find((a) => (a.command.includes('freebuff') || a.id === 'freebuff') && a.enabled !== false)
+          const codexAgent = agents.find((a) => (a.command.includes('codex') || a.id === 'codex') && a.enabled !== false)
+          const wtAgent = agents.find((a) => (a.id === 'windows-terminal' || a.command === 'wt.exe') && a.enabled !== false)
 
-            <button
-              onClick={async () => {
-                const fbAgent = agents.find((a) => a.command.includes('freebuff') || a.id === 'freebuff')
-                if (fbAgent) {
-                  await createSession({
-                    projectId: activeProject.id,
-                    agentId: fbAgent.id,
-                    cwd: activeProject.cwd
-                  })
-                }
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#00e599]/40 text-[#00e599] text-xs font-semibold transition"
-              title={`Iniciar Freebuff em ${activeProject.name}`}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#00e599]" />
-              <span>Freebuff</span>
-            </button>
-          </div>
-        )}
+          return (
+            <div className="flex items-center gap-1">
+              {claudeAgent && (
+                <button
+                  onClick={async () => {
+                    await createSession({
+                      projectId: activeProject.id,
+                      agentId: claudeAgent.id,
+                      cwd: activeProject.cwd
+                    })
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#d4a574]/40 text-[#d4a574] text-xs font-semibold transition"
+                  title={`Iniciar Claude Code em ${activeProject.name}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574]" />
+                  <span>Claude</span>
+                </button>
+              )}
+
+              {fbAgent && (
+                <button
+                  onClick={async () => {
+                    await createSession({
+                      projectId: activeProject.id,
+                      agentId: fbAgent.id,
+                      cwd: activeProject.cwd
+                    })
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#00e599]/40 text-[#00e599] text-xs font-semibold transition"
+                  title={`Iniciar Freebuff em ${activeProject.name}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00e599]" />
+                  <span>Freebuff</span>
+                </button>
+              )}
+
+              {codexAgent && (
+                <button
+                  onClick={async () => {
+                    await createSession({
+                      projectId: activeProject.id,
+                      agentId: codexAgent.id,
+                      cwd: activeProject.cwd
+                    })
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#10a37f]/40 text-[#10a37f] text-xs font-semibold transition"
+                  title={`Iniciar Codex em ${activeProject.name}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10a37f]" />
+                  <span>Codex</span>
+                </button>
+              )}
+
+              {wtAgent && (
+                <button
+                  onClick={async () => {
+                    await createSession({
+                      projectId: activeProject.id,
+                      agentId: wtAgent.id,
+                      cwd: activeProject.cwd
+                    })
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#4cc2ff]/40 text-[#4cc2ff] text-xs font-semibold transition"
+                  title={`Abrir Windows Terminal (Bash) em ${activeProject.name}`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#4cc2ff]" />
+                  <span>Terminal</span>
+                </button>
+              )}
+            </div>
+          )
+        })()}
 
         {/* Add Terminal Dropdown */}
         {projects.length > 0 && (
@@ -311,44 +350,47 @@ export const Header: React.FC = () => {
                     Iniciar no Projeto
                   </div>
 
-                  {projects.map((proj) => (
-                    <div key={proj.id} className="border-b border-[#222a3a]/60 last:border-b-0 py-1">
-                      <div className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold text-white bg-[#131720]">
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: proj.color || '#3dd6c6' }}
-                        />
-                        <span className="truncate flex-1">{proj.name}</span>
-                        <span className="text-[9px] text-[#6e7d91] font-mono truncate max-w-[80px]">
-                          {proj.cwd.split(/[\\/]/).pop()}
-                        </span>
-                      </div>
-
-                      {/* Top Agents */}
-                      {agents.slice(0, 4).map((agent) => (
-                        <button
-                          key={`${proj.id}-${agent.id}`}
-                          onClick={async () => {
-                            setIsAgentMenuOpen(false)
-                            await createSession({
-                              projectId: proj.id,
-                              agentId: agent.id,
-                              cwd: proj.cwd
-                            })
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-1 text-xs text-[#cfd6e0] hover:bg-[#222a3a] hover:text-white text-left transition"
-                        >
+                  {projects.map((proj) => {
+                    const enabledList = agents.filter((a) => a.enabled !== false)
+                    return (
+                      <div key={proj.id} className="border-b border-[#222a3a]/60 last:border-b-0 py-1">
+                        <div className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-semibold text-white bg-[#131720]">
                           <span
-                            className="w-4 h-4 rounded flex items-center justify-center font-bold text-[9px] text-black"
-                            style={{ backgroundColor: agent.color || '#3dd6c6' }}
-                          >
-                            {agent.icon || agent.name.slice(0, 2)}
+                            className="w-2 h-2 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: proj.color || '#3dd6c6' }}
+                          />
+                          <span className="truncate flex-1">{proj.name}</span>
+                          <span className="text-[9px] text-[#6e7d91] font-mono truncate max-w-[80px]">
+                            {proj.cwd.split(/[\\/]/).pop()}
                           </span>
-                          <span className="text-xs truncate flex-1">{agent.name}</span>
-                        </button>
-                      ))}
-                    </div>
-                  ))}
+                        </div>
+
+                        {/* Enabled Agents */}
+                        {enabledList.slice(0, 6).map((agent) => (
+                          <button
+                            key={`${proj.id}-${agent.id}`}
+                            onClick={async () => {
+                              setIsAgentMenuOpen(false)
+                              await createSession({
+                                projectId: proj.id,
+                                agentId: agent.id,
+                                cwd: proj.cwd
+                              })
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-1 text-xs text-[#cfd6e0] hover:bg-[#222a3a] hover:text-white text-left transition"
+                          >
+                            <span
+                              className="w-4 h-4 rounded flex items-center justify-center font-bold text-[9px] text-black"
+                              style={{ backgroundColor: agent.color || '#3dd6c6' }}
+                            >
+                              {agent.icon || agent.name.slice(0, 2)}
+                            </span>
+                            <span className="text-xs truncate flex-1">{agent.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })}
 
                   <div className="border-t border-[#273144] my-1" />
                   <button

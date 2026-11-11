@@ -43,6 +43,7 @@ export interface AgentProfile {
   resumeKind: ResumeKind
   idlePattern: string
   builtin: boolean
+  enabled?: boolean
 }
 
 export interface SessionRecord {
@@ -168,4 +169,5 @@ export interface AgentInput {
   color: string
   resumeKind: ResumeKind
   idlePattern: string
+  enabled?: boolean
 }

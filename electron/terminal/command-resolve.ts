@@ -16,6 +16,7 @@ export function commandSearchDirs(env: Record<string, string>, homeDir: string):
     env.APPDATA ? path.join(env.APPDATA, 'npm') : '',
     path.join(homeDir, 'AppData', 'Roaming', 'npm'),
     path.join(homeDir, '.config', 'manicode'),
+    path.join(homeDir, 'AppData', 'Local', 'Microsoft', 'WindowsApps'),
     'C:\\Program Files\\Git\\bin',
     'C:\\Program Files\\Git\\cmd',
     'C:\\Windows\\System32\\WindowsPowerShell\\v1.0',

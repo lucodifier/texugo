@@ -29,6 +29,25 @@ describe('AppDatabase (SQLite with sql.js)', () => {
     expect(agents.some((a) => a.id === 'powershell')).toBe(true)
     expect(agents.some((a) => a.id === 'claude')).toBe(true)
     expect(agents.some((a) => a.id === 'freebuff')).toBe(true)
+    expect(agents.some((a) => a.id === 'codex')).toBe(true)
+    expect(agents.some((a) => a.id === 'windows-terminal')).toBe(true)
+  })
+
+  it('manages agents enabled status persistence', () => {
+    db.ensureDefaultAgents()
+    const claude = db.getAgent('claude')
+    expect(claude).not.toBeNull()
+    expect(claude?.enabled).toBe(true)
+
+    // Disable claude
+    if (claude) {
+      db.upsertAgent({ ...claude, enabled: false })
+      expect(db.getAgent('claude')?.enabled).toBe(false)
+
+      // Re-enable claude
+      db.upsertAgent({ ...claude, enabled: true })
+      expect(db.getAgent('claude')?.enabled).toBe(true)
+    }
   })
 
   it('inserts and retrieves projects', () => {
