@@ -231,11 +231,12 @@ export class PtyManager {
       env: options.env,
       conptyInheritCursor: false
     }
-    const tryDll = process.platform === 'win32' && this.windowsBuild > 0 && this.windowsBuild < 21376
+    const tryDll = process.platform === 'win32'
     if (tryDll) {
       try {
         return pty.spawn(file, args, { ...base, useConptyDll: true })
-      } catch {
+      } catch (err) {
+        console.warn('[PtyManager] useConptyDll failed, fallback to system ConPTY:', err)
         return pty.spawn(file, args, base)
       }
     }

@@ -121,6 +121,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         homeDir: data.homeDir
       })
 
+      if (data.windowsBuild) {
+        terminalRegistry.setWindowsBuild(data.windowsBuild)
+      }
+      if (data.settings) {
+        terminalRegistry.setSettings(data.settings)
+      }
+
       // Register global IPC status listener
       ipc.onStatus((packet) => {
         get().handleStatusUpdate(packet)

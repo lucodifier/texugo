@@ -3,6 +3,7 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { WebglAddon } from '@xterm/addon-webgl'
 import { CanvasAddon } from '@xterm/addon-canvas'
+import { Unicode11Addon } from '@xterm/addon-unicode11'
 import '@xterm/xterm/css/xterm.css'
 import type { RendererMode, Settings } from '@shared/types'
 import { ipc } from '../../services/ipc'
@@ -107,12 +108,19 @@ class TerminalRegistry {
   private entries = new Map<string, TerminalEntry>()
   private settings: Settings | null = null
   private resizeRafs = new Map<string, number>()
+  private windowsBuild = 19045
 
   constructor() {
     // Listen for incoming terminal data packets from Electron main
     ipc.onData(({ sessionId, data }) => {
       this.feedData(sessionId, data)
     })
+  }
+
+  setWindowsBuild(build: number) {
+    if (build > 0) {
+      this.windowsBuild = build
+    }
   }
 
   setSettings(settings: Settings) {
@@ -137,6 +145,11 @@ class TerminalRegistry {
 
     const s = initialSettings || this.settings
     const termOptions: ITerminalOptions = {
+      allowProposedApi: true,
+      windowsPty: {
+        backend: 'conpty',
+        buildNumber: this.windowsBuild || 19045
+      },
       fontFamily: s?.fontFamily || '"Cascadia Code", "Cascadia Mono", Consolas, monospace',
       fontSize: s?.fontSize || 14,
       lineHeight: s?.lineHeight || 1.0,
@@ -172,11 +185,18 @@ class TerminalRegistry {
 
     const term = new Terminal(termOptions)
     const fitAddon = new FitAddon()
+    const unicode11Addon = new Unicode11Addon()
     const webLinksAddon = new WebLinksAddon((_event, uri) => {
       ipc.openExternal(uri)
     })
 
     term.loadAddon(fitAddon)
+    term.loadAddon(unicode11Addon)
+    try {
+      term.unicode.activeVersion = '11'
+    } catch (e) {
+      console.warn('[TerminalRegistry] Unicode11 activation fallback:', e)
+    }
     term.loadAddon(webLinksAddon)
 
     // Renderer setup with safe fallback: WebGL -> Canvas -> DOM
