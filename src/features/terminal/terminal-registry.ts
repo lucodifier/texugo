@@ -109,6 +109,7 @@ class TerminalRegistry {
   private settings: Settings | null = null
   private resizeRafs = new Map<string, number>()
   private windowsBuild = 19045
+  private restoredSessions = new Set<string>()
   public onWakeTerminal?: (sessionId: string) => boolean
 
   constructor() {
@@ -334,6 +335,7 @@ class TerminalRegistry {
           term.dispose()
         } catch {}
         this.entries.delete(sessionId)
+        this.restoredSessions.delete(sessionId)
       }
     }
 
@@ -352,8 +354,32 @@ class TerminalRegistry {
     return entry
   }
 
+  async restoreHistory(sessionId: string): Promise<void> {
+    if (this.restoredSessions.has(sessionId)) return
+    this.restoredSessions.add(sessionId)
+
+    if (this.settings && this.settings.restoreVisualHistory === false) return
+
+    try {
+      const text = await ipc.getTranscript(sessionId)
+      if (text && text.trim().length > 0) {
+        const entry = this.entries.get(sessionId)
+        if (entry) {
+          entry.term.write(text, () => {
+            entry.term.scrollToBottom()
+          })
+        }
+      }
+    } catch (e) {
+      console.warn('[terminalRegistry] Falha ao restaurar histórico visual para', sessionId, e)
+    }
+  }
+
   attach(sessionId: string, container: HTMLElement): TerminalEntry {
     const entry = this.getOrCreate(sessionId)
+    if (!this.restoredSessions.has(sessionId)) {
+      void this.restoreHistory(sessionId)
+    }
     if (entry.container !== container) {
       if (entry.container && entry.container.contains(entry.element)) {
         entry.container.removeChild(entry.element)

@@ -4,7 +4,7 @@ export type CloseReason = 'user' | 'exit' | 'app-quit' | 'spawn-failed' | null
 
 export type Attention = 'idle' | null
 
-export type ResumeKind = 'none' | 'claude' | 'codex'
+export type ResumeKind = 'none' | 'claude' | 'codex' | 'freebuff'
 
 export type PresetId = 'auto' | '1' | '2h' | '2v' | '3' | '4' | '6' | '8'
 

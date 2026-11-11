@@ -15,7 +15,7 @@ export const PROJECT_COLORS = [
 export function defaultAgents(): AgentProfile[] {
   return [
     agent('claude', 'Claude Code', 'claude', 'Cl', '#d4a574', 'claude'),
-    agent('freebuff', 'Freebuff', 'freebuff', 'Fb', '#00e599', 'none'),
+    agent('freebuff', 'Freebuff', 'freebuff', 'Fb', '#00e599', 'freebuff'),
     agent('codex', 'Codex', 'codex', 'Cx', '#10a37f', 'codex'),
     agent('git-bash', 'Bash', 'bash.exe', 'Ba', '#4cc2ff', 'none', ['--login', '-i'], true, { MSYSTEM: 'MINGW64' }),
     agent('cmd', 'CMD', 'cmd.exe', 'CM', '#c8c8c8', 'none'),

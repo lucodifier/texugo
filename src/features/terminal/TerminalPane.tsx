@@ -130,7 +130,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
         return (
           <span className="flex items-center gap-1 text-[10px] text-sky-400 font-mono">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
-            iniciando
+            {session.closeReason === 'app-quit' ? 'reconectando...' : 'iniciando'}
           </span>
         )
       case 'exited':

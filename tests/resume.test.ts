@@ -40,4 +40,18 @@ describe('Resume Logic (Claude & Codex)', () => {
       expect(result.args).toEqual(['resume', '--last'])
     }
   })
+
+  it('builds resume args for Freebuff with and without external session ID', () => {
+    const withId = buildResumeArgs('freebuff', [], 'conv-123')
+    expect('args' in withId).toBe(true)
+    if ('args' in withId) {
+      expect(withId.args).toEqual(['--continue', 'conv-123'])
+    }
+
+    const withoutId = buildResumeArgs('freebuff', [], null)
+    expect('args' in withoutId).toBe(true)
+    if ('args' in withoutId) {
+      expect(withoutId.args).toEqual(['--continue'])
+    }
+  })
 })

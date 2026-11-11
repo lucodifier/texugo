@@ -161,6 +161,30 @@ export const useAppStore = create<AppState>((set, get) => ({
           }
         }).catch(() => {})
       })
+
+      // Auto-reconectar sessões de IA interrompidas pelo encerramento do app
+      const activeProjId = data.workspace.activeProjectId
+      const activeProject = data.projects.find((p) => p.id === activeProjId)
+      const activeSlotIds = activeProject?.layout?.slots?.filter(Boolean) || []
+
+      const sessionsToResume = data.sessions.filter((s) => {
+        const isTarget = s.projectId === activeProjId || activeSlotIds.includes(s.id)
+        const wasAppQuit = s.closeReason === 'app-quit'
+        const canResume = s.resumeKind && s.resumeKind !== 'none'
+        return isTarget && wasAppQuit && canResume
+      })
+
+      if (sessionsToResume.length > 0) {
+        setTimeout(async () => {
+          for (const s of sessionsToResume) {
+            try {
+              await get().resumeSession(s.id)
+            } catch (err) {
+              console.warn(`[AutoResume] Falha ao retomar sessão ${s.id}:`, err)
+            }
+          }
+        }, 200)
+      }
     } catch (err: any) {
       console.error('Falha ao inicializar Agent Desktop:', err)
       set({ initError: err?.message || String(err) })
@@ -217,6 +241,27 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ workspace: nextWorkspace })
     await ipc.saveWorkspace(nextWorkspace)
+
+    // Se o projeto tiver sessões de IA interrompidas pelo encerramento anterior do app, retoma automaticamente
+    if (targetId) {
+      const targetSessions = get().sessions.filter(
+        (s) =>
+          s.projectId === targetId &&
+          s.closeReason === 'app-quit' &&
+          s.status === 'exited' &&
+          s.resumeKind &&
+          s.resumeKind !== 'none'
+      )
+      if (targetSessions.length > 0) {
+        setTimeout(async () => {
+          for (const s of targetSessions) {
+            try {
+              await get().resumeSession(s.id)
+            } catch {}
+          }
+        }, 150)
+      }
+    }
   },
 
   closeProjectTab: async (id) => {

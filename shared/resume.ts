@@ -39,6 +39,18 @@ export function buildResumeArgs(
       description: 'codex resume --last: a sessão mais recente filtrada pela CLI'
     }
   }
+  if (kind === 'freebuff') {
+    if (externalSessionId) {
+      return {
+        args: [...baseArgs, '--continue', externalSessionId],
+        description: 'freebuff --continue com o ID da conversa'
+      }
+    }
+    return {
+      args: [...baseArgs, '--continue'],
+      description: 'freebuff --continue: a conversa mais recente deste diretório'
+    }
+  }
   return {
     error:
       'Este agente não tem retomada oficial configurada. O histórico visual continua disponível. Abra um novo terminal se quiser outra sessão.'

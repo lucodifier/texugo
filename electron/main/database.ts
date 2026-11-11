@@ -201,6 +201,11 @@ export class AppDatabase {
         SET name = 'Bash', color = '#4cc2ff', icon = 'Ba', env_json = '{"MSYSTEM":"MINGW64"}'
         WHERE id = 'git-bash'
       `)
+      this.db.run(`
+        UPDATE agents 
+        SET resume_kind = 'freebuff'
+        WHERE id = 'freebuff' AND resume_kind = 'none'
+      `)
       this.persist()
     } catch {}
 
