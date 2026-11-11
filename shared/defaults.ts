@@ -15,6 +15,7 @@ export const PROJECT_COLORS = [
 export function defaultAgents(): AgentProfile[] {
   return [
     agent('claude', 'Claude Code', 'claude', 'Cl', '#d4a574', 'claude'),
+    agent('freebuff', 'Freebuff', 'freebuff', 'Fb', '#00e599', 'none'),
     agent('codex', 'Codex', 'codex', 'Cx', '#10a37f', 'codex'),
     agent('opencode', 'OpenCode', 'opencode', 'Oc', '#7c9cff', 'none'),
     agent('cursor', 'Cursor', 'cursor-agent', 'Cu', '#c4b5fd', 'none'),

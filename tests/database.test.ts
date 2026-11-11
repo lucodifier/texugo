@@ -28,6 +28,7 @@ describe('AppDatabase (SQLite with sql.js)', () => {
     expect(agents.length).toBeGreaterThan(0)
     expect(agents.some((a) => a.id === 'powershell')).toBe(true)
     expect(agents.some((a) => a.id === 'claude')).toBe(true)
+    expect(agents.some((a) => a.id === 'freebuff')).toBe(true)
   })
 
   it('inserts and retrieves projects', () => {

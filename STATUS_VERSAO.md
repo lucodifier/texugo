@@ -1,17 +1,17 @@
-# 🦡 Texugo - Estado Atual da Versão e Plano de Retomada
+# 🦡 Texugo - Estado Atual da Versão
 
-**Data de Atualização:** 10 de Novembro de 2026, 23:58 (Horário de Brasília)  
+**Data de Atualização:** 11 de Novembro de 2026, 10:48 (Horário de Brasília)  
 **Repositório:** `C:\codes\CodeHolistic\TexugoIA`  
-**Branch:** `master` (último commit funcional: `0195182` - *fix: remove terminal count badge from project list in sidebar*)  
+**Branch:** `master`  
 **Executáveis gerados e prontos para teste:**
-- 🚀 **Executável direto:** `release\win-unpacked\Texugo.exe`
-- 📦 **Instalador NSIS:** `release\Texugo-Setup-0.1.0.exe`
+- 🚀 **Executável direto:** [Texugo.exe](file:///c:/codes/CodeHolistic/TexugoIA/release/win-unpacked/Texugo.exe)
+- 📦 **Instalador NSIS:** [Texugo-Setup-0.1.0.exe](file:///c:/codes/CodeHolistic/TexugoIA/release/Texugo-Setup-0.1.0.exe)
 
 ---
 
 ## 📌 1. Visão Geral do Projeto
 
-O **Texugo** é um desktop manager local em Electron + React + Tailwind + xterm + ConPTY (via `node-pty`), projetado para gerenciar múltiplos terminais de agentes de inteligência artificial (como **Claude Code** e **Freebuff**) rodando lado a lado em projetos/pastas distintas no Windows.
+O **Texugo** é um desktop manager local em Electron + React + Tailwind + xterm + ConPTY (via `node-pty`), projetado para gerenciar múltiplos terminais de agentes de inteligência artificial (**Claude Code**, **Freebuff**, **Codex**, etc.) rodando lado a lado em projetos e pastas distintas no Windows.
 
 ---
 
@@ -27,41 +27,12 @@ O **Texugo** é um desktop manager local em Electron + React + Tailwind + xterm 
 | **6** | **Botão inútil de restaurar/maximizar grade na janela** | Removido o botão de maximizar/restaurar do toolbar do terminal pane, mantendo o controle centralizado e o layout sempre limpo e previsível. | `src/features/terminal/TerminalPane.tsx` |
 | **7** | **Clicar no X deixava "processo encerrado com código 1" e travava a janela** | Corrigido para chamar diretamente `deleteSession()`, fechando o terminal de forma imediata (0ms de latência), descartando a instância do xterm/DOM, encerrando os processos via `taskkill /T /F` no ConPTY e reorganizando a grade automaticamente. | `src/features/terminal/TerminalPane.tsx`, `src/stores/useAppStore.ts`, `electron/main/ipc.ts`, `electron/terminal/pty-manager.ts` |
 | **8** | **Número 1 com bolinha verde ao lado do projeto na sidebar** | Removido completamente o contador de terminais ao lado do nome do projeto, deixando a lista visualmente limpa e moderna. | `src/components/Sidebar.tsx` |
+| **9** | **Suporte ao Freebuff além do Claude Code** | Adicionado o perfil oficial do **Freebuff** no topo dos agentes padrão (`shared/defaults.ts`); adicionados atalhos de 1 clique (`Claude` e `Freebuff`) tanto no Header quanto na Sidebar (ao passar o mouse); incluído o diretório `.config\manicode` no PATH do resolver. | `shared/defaults.ts`, `src/components/Header.tsx`, `src/components/Sidebar.tsx`, `electron/terminal/command-resolve.ts` |
+| **10** | **Espaçamento e descompasso de cursor ao digitar no prompt (`>e  ntao`)** | Instalado e ativado o `@xterm/addon-unicode11` (substituindo o Unicode 6 legado pelo Unicode 11); habilitado `windowsPty` com heurísticas nativas do ConPTY para Windows; empacotado o `OpenConsole.exe` moderno v1.23 do Windows Terminal com `useConptyDll: true` para eliminar drift de coordenadas em caracteres Unicode como `❯`. | `package.json`, `src/features/terminal/terminal-registry.ts`, `electron/terminal/pty-manager.ts`, `scripts/patch-node-pty.mjs` |
 
 ---
 
-## 🎯 3. Próximo Ponto para Iniciar Amanhã: **Suporte ao Freebuff**
-
-### O que foi solicitado:
-> *"Permitir tbem alem do cloude code o freebuff"*
-
-### Diagnóstico já realizado:
-1. O executável do **Freebuff** já está instalado no computador do usuário:
-   - Caminho npm global: `C:\Users\codeholistic\AppData\Roaming\npm\freebuff.cmd`
-   - Caminho binário nativo: `C:\Users\codeholistic\.config\manicode\freebuff.exe`
-   - Versão detectada: `0.2.36`
-2. O arquivo `electron/terminal/command-resolve.ts` já teve o diretório `.config\manicode` adicionado às pastas prioritárias de busca de executáveis no PATH.
-
-### O que precisa ser finalizado amanhã:
-1. **Adicionar o Freebuff na lista de agentes padrão:**
-   - No arquivo `shared/defaults.ts`:
-     ```ts
-     agent('freebuff', 'Freebuff', 'freebuff', 'Fb', '#00e599', 'none')
-     ```
-   - Posicioná-lo logo abaixo do Claude Code para que apareça como destaque prioritário no topo.
-2. **Adicionar atalhos de disparo rápido (1 clique) para o Freebuff:**
-   - **No Header (topo):** Ao lado do projeto ativo, exibir botões rápidos para disparar `[ Claude Code ]` e `[ Freebuff ]`.
-   - **Na Sidebar (ao passar o mouse sobre o projeto):** Exibir os botões de inicialização rápida `Cl` (Claude) e `Fb` (Freebuff), além do `+` para escolher outros agentes.
-3. **Detecção de Modelo do Freebuff:**
-   - Adicionar `Freebuff` à regex de detecção em `TerminalPane.tsx` e `useAppStore.ts` para que o badge da barra lateral mostre `Freebuff` quando ele estiver em execução.
-4. **Validação & Build:**
-   - Rodar testes unitários: `npm test`
-   - Gerar nova build: `npm run build && npx electron-builder --win`
-   - Testar a abertura do terminal Freebuff e Claude Code lado a lado.
-
----
-
-## 🛠️ 4. Comandos Úteis para o Desenvolvimento
+## 🛠️ 3. Comandos Úteis
 
 - **Rodar em modo desenvolvimento:**
   ```powershell
@@ -75,9 +46,4 @@ O **Texugo** é um desktop manager local em Electron + React + Tailwind + xterm 
   ```powershell
   npm run build
   npx electron-builder --win
-  ```
-- **Localização dos binários de release:**
-  ```
-  release\win-unpacked\Texugo.exe
-  release\Texugo-Setup-0.1.0.exe
   ```

@@ -155,21 +155,54 @@ export const Sidebar: React.FC = () => {
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     {/* Actions visible on hover */}
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                      {/* Quick Launch: Claude Code */}
                       <button
                         onClick={async (e) => {
                           e.stopPropagation()
-                          const claudeAgent = agents.find((a) => a.command.includes('claude')) || agents[0]
+                          const claudeAgent = agents.find((a) => a.command.includes('claude') || a.id === 'claude') || agents[0]
                           if (claudeAgent) {
                             await createSession({
                               projectId: project.id,
                               agentId: claudeAgent.id,
                               cwd: project.cwd
                             })
+                          }
+                        }}
+                        title="Abrir terminal Claude Code nesta pasta"
+                        className="px-1 py-0.5 rounded text-[10px] font-bold text-[#d4a574] hover:bg-[#d4a574]/20 transition"
+                      >
+                        Cl
+                      </button>
+
+                      {/* Quick Launch: Freebuff */}
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation()
+                          const fbAgent = agents.find((a) => a.command.includes('freebuff') || a.id === 'freebuff')
+                          if (fbAgent) {
+                            await createSession({
+                              projectId: project.id,
+                              agentId: fbAgent.id,
+                              cwd: project.cwd
+                            })
                           } else {
                             setNewSessionModal(true)
                           }
                         }}
-                        title="Abrir novo terminal (Claude Code) nesta pasta"
+                        title="Abrir terminal Freebuff nesta pasta"
+                        className="px-1 py-0.5 rounded text-[10px] font-bold text-[#00e599] hover:bg-[#00e599]/20 transition"
+                      >
+                        Fb
+                      </button>
+
+                      {/* Pick another agent / custom */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          switchProject(project.id)
+                          setNewSessionModal(true)
+                        }}
+                        title="Abrir outro agente ou terminal customizado"
                         className="p-1 hover:text-[#3dd6c6] text-[#8e9aa8]"
                       >
                         <Plus size={13} />

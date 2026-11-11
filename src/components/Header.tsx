@@ -247,6 +247,47 @@ export const Header: React.FC = () => {
           </div>
         )}
 
+        {/* Quick Launch Buttons for Active Project */}
+        {activeProject && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={async () => {
+                const claudeAgent = agents.find((a) => a.command.includes('claude') || a.id === 'claude')
+                if (claudeAgent) {
+                  await createSession({
+                    projectId: activeProject.id,
+                    agentId: claudeAgent.id,
+                    cwd: activeProject.cwd
+                  })
+                }
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#d4a574]/40 text-[#d4a574] text-xs font-semibold transition"
+              title={`Iniciar Claude Code em ${activeProject.name}`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574]" />
+              <span>Claude</span>
+            </button>
+
+            <button
+              onClick={async () => {
+                const fbAgent = agents.find((a) => a.command.includes('freebuff') || a.id === 'freebuff')
+                if (fbAgent) {
+                  await createSession({
+                    projectId: activeProject.id,
+                    agentId: fbAgent.id,
+                    cwd: activeProject.cwd
+                  })
+                }
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#00e599]/40 text-[#00e599] text-xs font-semibold transition"
+              title={`Iniciar Freebuff em ${activeProject.name}`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00e599]" />
+              <span>Freebuff</span>
+            </button>
+          </div>
+        )}
+
         {/* Add Terminal Dropdown */}
         {projects.length > 0 && (
           <div className="relative">
