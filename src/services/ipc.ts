@@ -57,8 +57,8 @@ export const ipc = {
   renameSession: (id: string, name: string) => call<SessionRecord>('sessions:rename', { id, name }),
   resumeSession: (id: string, cols?: number, rows?: number) =>
     call<{ session: SessionRecord; description: string }>('sessions:resume', { id, cols, rows }),
-  restartSession: (id: string, cols?: number, rows?: number) =>
-    call<SessionRecord>('sessions:restart', { id, cols, rows }),
+  restartSession: (id: string, cols?: number, rows?: number, agentId?: string) =>
+    call<SessionRecord>('sessions:restart', { id, cols, rows, agentId }),
   closeSession: (id: string) => call<SessionRecord>('sessions:close', { id }),
   deleteSession: (id: string) => call<boolean>('sessions:delete', { id }),
   duplicateSession: (id: string) => call<SessionRecord>('sessions:duplicate', { id }),

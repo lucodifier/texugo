@@ -109,6 +109,7 @@ class TerminalRegistry {
   private settings: Settings | null = null
   private resizeRafs = new Map<string, number>()
   private windowsBuild = 19045
+  public onWakeTerminal?: (sessionId: string) => boolean
 
   constructor() {
     // Listen for incoming terminal data packets from Electron main
@@ -233,6 +234,12 @@ class TerminalRegistry {
     // Forward terminal keypresses to PTY with duplicate burst protection
     let lastDataSent = { text: '', time: 0 }
     term.onData((input) => {
+      // Se a sessão estiver encerrada e o usuário pressionar Enter, acordar com o terminal padrão
+      if (input.includes('\r') || input.includes('\n')) {
+        const handled = this.onWakeTerminal?.(sessionId)
+        if (handled) return
+      }
+
       const now = Date.now()
       // Guard against identical multi-character text bursts sent within 400ms
       // (Protects against Wispr Flow or OS double-paste / double-injection)

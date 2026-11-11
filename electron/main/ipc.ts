@@ -155,8 +155,25 @@ export function registerIpc(host: Host): void {
   })
 
   handle('sessions:restart', async (payload) => {
-    const { id, cols, rows } = payload as { id: string; cols?: number; rows?: number }
+    const { id, cols, rows, agentId } = payload as {
+      id: string
+      cols?: number
+      rows?: number
+      agentId?: string
+    }
     const session = requiredSession(host, id)
+    if (agentId) {
+      const agent = host.db.getAgent(agentId)
+      if (agent) {
+        session.agentId = agent.id
+        session.name = agent.name
+        session.command = agent.command
+        session.args = agent.args
+        session.resumeKind = agent.resumeKind
+        session.env = agent.env
+        host.db.updateSession(session)
+      }
+    }
     session.updatedAt = Date.now()
     const size = sanitizeSize(cols ?? 120, rows ?? 32) ?? { cols: 120, rows: 32 }
     const live = await host.pty.spawn(toSpawn(host, session, size.cols, size.rows))

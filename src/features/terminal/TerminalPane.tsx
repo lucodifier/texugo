@@ -27,6 +27,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
     closeSession,
     deleteSession,
     restartSession,
+    restartWithDefaultTerminal,
     resumeSession,
     focusSession,
     workspace
@@ -83,6 +84,24 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
       terminalRegistry.detach(session.id)
     }
   }, [session.id])
+
+  // Quando o processo estiver encerrado, pressionar Enter no painel reinicia com o terminal padrão
+  useEffect(() => {
+    if (session.status !== 'exited') return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault()
+        restartWithDefaultTerminal(session.id)
+      }
+    }
+
+    const container = containerRef.current
+    container?.addEventListener('keydown', handleKeyDown)
+    return () => {
+      container?.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [session.status, session.id, restartWithDefaultTerminal])
 
   const handleCopyTranscript = async () => {
     try {
@@ -202,22 +221,36 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
 
         {/* Toolbar Actions */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {/* Resume (if exited & supported) */}
-          {session.status === 'exited' && session.resumeKind !== 'none' && (
-            <button
-              onClick={() => resumeSession(session.id)}
-              className="p-1 rounded text-[#3dd6c6] hover:bg-[#222a3a]"
-              title={`Retomar conversa (${session.resumeKind})`}
-            >
-              <Play size={12} />
-            </button>
+          {/* Action buttons if exited */}
+          {session.status === 'exited' && (
+            <>
+              <button
+                onClick={() => restartWithDefaultTerminal(session.id)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#3dd6c6]/20 border border-[#3dd6c6]/40 text-[#3dd6c6] text-[11px] font-semibold hover:bg-[#3dd6c6]/30 transition"
+                title="Abrir o terminal padrão nesta pasta"
+              >
+                <TerminalIcon size={12} />
+                <span>Terminal Padrão</span>
+              </button>
+
+              {session.resumeKind !== 'none' && (
+                <button
+                  onClick={() => resumeSession(session.id)}
+                  className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#d4a574]/20 border border-[#d4a574]/40 text-[#d4a574] text-[11px] font-semibold hover:bg-[#d4a574]/30 transition"
+                  title={`Retomar conversa (${session.resumeKind})`}
+                >
+                  <Play size={12} />
+                  <span>Retomar</span>
+                </button>
+              )}
+            </>
           )}
 
           {/* Restart */}
           <button
             onClick={() => restartSession(session.id)}
             className="p-1 rounded text-[#8e9aa8] hover:text-white hover:bg-[#222a3a]"
-            title="Reiniciar processo"
+            title="Reiniciar processo original"
           >
             <RotateCcw size={12} />
           </button>
@@ -230,7 +263,6 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
           >
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
           </button>
-
 
           {/* Close */}
           <button
@@ -246,6 +278,36 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
       {/* Terminal Canvas Container */}
       <div className="flex-1 w-full h-full relative overflow-hidden bg-[#0c0e12] p-2">
         <div ref={containerRef} className="w-full h-full" />
+
+        {/* Floating Actions when Exited */}
+        {session.status === 'exited' && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#151922]/95 border border-[#273144] shadow-2xl backdrop-blur-sm text-xs select-none z-10">
+            <span className="text-[#8e9aa8] text-[11px]">Processo encerrado. Pressione <strong className="text-white font-mono">Enter</strong> ou:</span>
+            <button
+              onClick={() => restartWithDefaultTerminal(session.id)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#3dd6c6] text-[#0c0e12] font-semibold hover:bg-[#34b8ab] transition text-xs shadow"
+            >
+              <TerminalIcon size={13} />
+              <span>Abrir Terminal Padrão</span>
+            </button>
+            {session.resumeKind !== 'none' && (
+              <button
+                onClick={() => resumeSession(session.id)}
+                className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#1e2536] text-[#d4a574] border border-[#d4a574]/40 hover:bg-[#283248] transition text-xs font-medium"
+              >
+                <Play size={13} />
+                <span>Retomar {agent?.name || ''}</span>
+              </button>
+            )}
+            <button
+              onClick={handleClose}
+              className="px-2 py-1 rounded text-[#8e9aa8] hover:text-red-400 hover:bg-[#1e2536] transition text-xs"
+              title="Fechar esta janela"
+            >
+              Fechar Janela
+            </button>
+          </div>
+        )}
 
         {/* Floating Scroll to Bottom Button */}
         {!isAtBottom && (

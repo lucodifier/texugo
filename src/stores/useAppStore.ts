@@ -63,7 +63,8 @@ interface AppState {
   createSession: (input: CreateSessionInput) => Promise<SessionRecord>
   renameSession: (id: string, name: string) => Promise<void>
   resumeSession: (id: string, cols?: number, rows?: number) => Promise<void>
-  restartSession: (id: string, cols?: number, rows?: number) => Promise<void>
+  restartSession: (id: string, cols?: number, rows?: number, agentId?: string) => Promise<void>
+  restartWithDefaultTerminal: (id: string) => Promise<void>
   closeSession: (id: string) => Promise<void>
   deleteSession: (id: string) => Promise<void>
   duplicateSession: (id: string) => Promise<void>
@@ -126,6 +127,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       if (data.settings) {
         terminalRegistry.setSettings(data.settings)
+      }
+
+      // Conectar manipulador para quando o usuário aperta Enter em uma sessão encerrada
+      terminalRegistry.onWakeTerminal = (sessionId) => {
+        const session = get().sessions.find((s) => s.id === sessionId)
+        if (session && session.status === 'exited') {
+          get().restartWithDefaultTerminal(sessionId)
+          return true
+        }
+        return false
       }
 
       // Register global IPC status listener
@@ -354,11 +365,38 @@ export const useAppStore = create<AppState>((set, get) => ({
     }))
   },
 
-  restartSession: async (id, cols, rows) => {
-    const updated = await ipc.restartSession(id, cols, rows)
+  restartSession: async (id, cols, rows, agentId) => {
+    const updated = await ipc.restartSession(id, cols, rows, agentId)
     set((state) => ({
       sessions: state.sessions.map((s) => (s.id === id ? updated : s))
     }))
+  },
+
+  restartWithDefaultTerminal: async (id: string) => {
+    const { settings, agents, sessions } = get()
+    const session = sessions.find((s) => s.id === id)
+    if (!session) return
+
+    const defaultId = settings?.defaultAgentId || 'powershell'
+    const defaultAgent =
+      agents.find((a) => a.id === defaultId && a.enabled !== false) ||
+      agents.find((a) => a.id === 'powershell') ||
+      agents.find((a) => a.id === 'git-bash') ||
+      agents.find((a) => a.enabled !== false) ||
+      agents[0]
+
+    const entry = terminalRegistry.get(id)
+    const cols = entry?.term.cols || 120
+    const rows = entry?.term.rows || 32
+
+    const updated = await ipc.restartSession(id, cols, rows, defaultAgent?.id)
+    set((state) => ({
+      sessions: state.sessions.map((s) => (s.id === id ? updated : s))
+    }))
+
+    setTimeout(() => {
+      terminalRegistry.get(id)?.term.focus()
+    }, 100)
   },
 
   closeSession: async (id) => {
@@ -423,6 +461,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   handleStatusUpdate: (packet) => {
+    const { sessions, settings, deleteSession, restartWithDefaultTerminal } = get()
+    const session = sessions.find((s) => s.id === packet.sessionId)
+
     set((state) => ({
       sessions: state.sessions.map((s) =>
         s.id === packet.sessionId
@@ -438,6 +479,36 @@ export const useAppStore = create<AppState>((set, get) => ({
           : s
       )
     }))
+
+    if (packet.status === 'exited' && session) {
+      const defaultId = settings?.defaultAgentId || 'powershell'
+      const isAIOrCustomAgent =
+        (session.agentId && ['claude', 'freebuff', 'codex', 'opencode', 'cursor', 'gemini'].includes(session.agentId)) ||
+        session.command.includes('claude') ||
+        session.command.includes('freebuff') ||
+        session.command.includes('codex')
+
+      const isShellDefault =
+        !isAIOrCustomAgent &&
+        (session.agentId === defaultId || ['powershell', 'cmd', 'git-bash', 'windows-terminal'].includes(session.agentId || ''))
+
+      // Se o usuário estava no shell padrão e digitou "exit" (exitCode 0): fecha a janela
+      if (isShellDefault && packet.exitCode === 0) {
+        deleteSession(session.id)
+        return
+      }
+
+      // Se era um agente (como Claude Code, Freebuff, Codex, etc.) que encerrou com Ctrl+C ou exit:
+      // Reinicia automaticamente com o terminal padrão da pessoa!
+      if (isAIOrCustomAgent || (session.resumeKind !== 'none' && packet.exitCode === 0)) {
+        setTimeout(() => {
+          const current = get().sessions.find((s) => s.id === session.id)
+          if (current && current.status === 'exited') {
+            restartWithDefaultTerminal(session.id)
+          }
+        }, 400)
+      }
+    }
   },
 
   saveAgent: async (input) => {
