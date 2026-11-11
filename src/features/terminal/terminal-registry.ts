@@ -297,7 +297,15 @@ class TerminalRegistry {
       hasNewOutputWhileScrolledUp: false,
       rendererMode,
       dispose: () => {
-        term.dispose()
+        try {
+          if (entry.container && entry.container.contains(entry.element)) {
+            entry.container.removeChild(entry.element)
+          }
+        } catch {}
+        entry.container = null
+        try {
+          term.dispose()
+        } catch {}
         this.entries.delete(sessionId)
       }
     }

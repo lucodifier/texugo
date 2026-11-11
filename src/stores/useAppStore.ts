@@ -19,6 +19,7 @@ import {
   removeSessionFromLayout
 } from '@shared/layout'
 import { ipc } from '../services/ipc'
+import { terminalRegistry } from '../features/terminal/terminal-registry'
 
 interface AppState {
   initialized: boolean
@@ -361,9 +362,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteSession: async (id) => {
-    const { sessions, projects } = get()
+    const { sessions, projects, workspace } = get()
     const session = sessions.find((s) => s.id === id)
-    await ipc.deleteSession(id)
+
+    // Remove from terminal registry immediately to clean up DOM and xterm
+    terminalRegistry.remove(id)
 
     let updatedProjects = projects
     if (session) {
@@ -385,9 +388,16 @@ export const useAppStore = create<AppState>((set, get) => ({
       projects: updatedProjects,
       workspace: {
         ...workspace,
-        layout: updatedWLayout
+        layout: updatedWLayout,
+        focusedSessionId: workspace.focusedSessionId === id ? null : workspace.focusedSessionId
       }
     })
+
+    try {
+      await ipc.deleteSession(id)
+    } catch (err) {
+      console.error('Falha ao deletar sessão no backend:', err)
+    }
   },
 
   duplicateSession: async (id) => {

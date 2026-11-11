@@ -180,14 +180,25 @@ export function registerIpc(host: Host): void {
 
   handle('sessions:delete', (payload) => {
     const { id } = payload as { id: string }
-    const session = requiredSession(host, id)
-    host.pty.shutdown(id, 'user')
-    host.db.deleteSession(id)
+    host.pty.delete(id)
     deleteTranscript(host, id)
-    const project = requiredProject(host, session.projectId)
-    project.layout = removeSessionFromLayout(project.layout, id, sessionIds(host, project.id))
-    project.updatedAt = Date.now()
-    host.db.updateProject(project)
+    const session = host.db.getSession(id)
+    if (session) {
+      host.db.deleteSession(id)
+      const project = host.db.getProject(session.projectId)
+      if (project) {
+        project.layout = removeSessionFromLayout(project.layout, id, sessionIds(host, project.id))
+        project.updatedAt = Date.now()
+        host.db.updateProject(project)
+      }
+    }
+    const ws = host.db.getWorkspace()
+    if (ws.layout) {
+      const allSessionIds = host.db.listSessions().map((s) => s.id)
+      ws.layout = removeSessionFromLayout(ws.layout, id, allSessionIds)
+      if (ws.focusedSessionId === id) ws.focusedSessionId = null
+      host.db.saveWorkspace(ws)
+    }
     return true
   })
 

@@ -159,7 +159,9 @@ export class PtyManager {
       }
       this.push(runtime, `\r\n[processo encerrado com código ${exitCode}]\r\n`)
       runtime.log.close()
-      if (!this.isShuttingDown) this.emitStatus(publicView(runtime))
+      if (!this.isShuttingDown && this.sessions.has(runtime.id)) {
+        this.emitStatus(publicView(runtime))
+      }
     })
     return publicView(runtime)
   }
@@ -179,6 +181,17 @@ export class PtyManager {
     session.cols = size.cols
     session.rows = size.rows
     session.pty.resize(size.cols, size.rows)
+  }
+
+  delete(sessionId: string): void {
+    this.shutdown(sessionId, 'user', false)
+    const session = this.sessions.get(sessionId)
+    if (session) {
+      try {
+        session.log.close()
+      } catch {}
+      this.sessions.delete(sessionId)
+    }
   }
 
   shutdown(sessionId: string, reason: CloseReason, notifyIfAbsent = true): void {
@@ -230,6 +243,7 @@ export class PtyManager {
   }
 
   private push(session: Runtime, data: string): void {
+    if (!this.sessions.has(session.id)) return
     session.log.append(data)
     session.seq += 1
     session.lastLine = lastPlainLine(data, session.lastLine).slice(-500)

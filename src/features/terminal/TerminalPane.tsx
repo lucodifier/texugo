@@ -100,13 +100,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
   }
 
   const handleClose = () => {
-    if (session.status === 'running' || session.status === 'starting') {
-      if (confirm(`O processo da sessão "${session.name}" ainda está em execução. Encerrar?`)) {
-        closeSession(session.id)
-      }
-    } else {
-      deleteSession(session.id)
-    }
+    deleteSession(session.id)
   }
 
   const getStatusBadge = () => {
