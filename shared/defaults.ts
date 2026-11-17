@@ -65,7 +65,7 @@ export function defaultSettings(homeDir: string): Settings {
     defaultAgentId: 'powershell',
     defaultCwd: homeDir,
     restoreVisualHistory: true,
-    confirmClose: true,
+    confirmClose: false,
     renderer: 'canvas',
     transcriptLimitMb: 64
   }

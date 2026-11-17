@@ -169,9 +169,9 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       const sessionsToResume = data.sessions.filter((s) => {
         const isTarget = s.projectId === activeProjId || activeSlotIds.includes(s.id)
-        const wasAppQuit = s.closeReason === 'app-quit'
         const canResume = s.resumeKind && s.resumeKind !== 'none'
-        return isTarget && wasAppQuit && canResume
+        const wasInterrupted = s.closeReason === 'app-quit' || s.closeReason === null || s.status === 'exited'
+        return isTarget && canResume && wasInterrupted
       })
 
       if (sessionsToResume.length > 0) {
@@ -247,7 +247,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       const targetSessions = get().sessions.filter(
         (s) =>
           s.projectId === targetId &&
-          s.closeReason === 'app-quit' &&
           s.status === 'exited' &&
           s.resumeKind &&
           s.resumeKind !== 'none'
@@ -361,9 +360,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   focusSession: async (sessionId) => {
-    const { workspace } = get()
+    const { workspace, projects, sessions } = get()
+    const session = sessions.find((s) => s.id === sessionId)
+    let updatedProjects = projects
+
+    if (session) {
+      const targetProject = projects.find((p) => p.id === session.projectId)
+      if (targetProject) {
+        const projectSessionIds = sessions.filter((s) => s.projectId === targetProject.id).map((s) => s.id)
+        const layout = focusSessionInLayout(targetProject.layout, session.id, projectSessionIds)
+        updatedProjects = projects.map((p) => (p.id === targetProject.id ? { ...p, layout } : p))
+        await ipc.updateProject({ id: targetProject.id, layout })
+      }
+    }
+
     const nextWorkspace = { ...workspace, focusedSessionId: sessionId }
-    set({ workspace: nextWorkspace })
+    set({ workspace: nextWorkspace, projects: updatedProjects })
     await ipc.saveWorkspace(nextWorkspace)
   },
 
@@ -541,17 +553,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (isShellDefault && packet.exitCode === 0) {
         deleteSession(session.id)
         return
-      }
-
-      // Se era um agente (como Claude Code, Freebuff, Codex, etc.) que encerrou com Ctrl+C ou exit:
-      // Reinicia automaticamente com o terminal padrão da pessoa!
-      if (isAIOrCustomAgent || (session.resumeKind !== 'none' && packet.exitCode === 0)) {
-        setTimeout(() => {
-          const current = get().sessions.find((s) => s.id === session.id)
-          if (current && current.status === 'exited') {
-            restartWithDefaultTerminal(session.id)
-          }
-        }, 400)
       }
     }
   },

@@ -31,7 +31,7 @@ export const ProjectModal: React.FC = () => {
 
   const handlePickDirectory = async () => {
     try {
-      const selected = await ipc.pickDirectory(cwd || undefined)
+      const selected = await ipc.pickDirectory()
       if (selected) {
         setCwd(selected)
         if (!name) {

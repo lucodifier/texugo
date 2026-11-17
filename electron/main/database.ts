@@ -34,7 +34,7 @@ function loadSql(): Promise<SqlJsStatic> {
   if (!sqlPromise) {
     const wasmPath = require.resolve('sql.js/dist/sql-wasm.wasm')
     const wasm = fs.readFileSync(wasmPath)
-    sqlPromise = initSqlJs({ wasmBinary: wasm })
+    sqlPromise = initSqlJs({ wasmBinary: new Uint8Array(wasm).buffer as ArrayBuffer })
   }
   return sqlPromise
 }
@@ -104,6 +104,13 @@ export class AppDatabase {
     `)
     try {
       this.db.run('ALTER TABLE agents ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1')
+    } catch {}
+    try {
+      this.db.run(`
+        UPDATE sessions SET resume_kind = 'freebuff' WHERE (command LIKE '%freebuff%' OR agent_id = 'freebuff') AND resume_kind != 'freebuff';
+        UPDATE sessions SET resume_kind = 'claude' WHERE (command LIKE '%claude%' OR agent_id = 'claude') AND resume_kind != 'claude';
+        UPDATE sessions SET resume_kind = 'codex' WHERE (command LIKE '%codex%' OR agent_id = 'codex') AND resume_kind != 'codex';
+      `)
     } catch {}
     this.persist()
   }

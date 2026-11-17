@@ -8,7 +8,9 @@ import {
   ArrowDown,
   Terminal as TerminalIcon,
   Check,
-  Bot
+  Bot,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import type { SessionRecord } from '@shared/types'
 import { useAppStore } from '../../stores/useAppStore'
@@ -30,6 +32,7 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
     restartWithDefaultTerminal,
     resumeSession,
     focusSession,
+    maximizeSession,
     workspace
   } = useAppStore()
 
@@ -40,6 +43,9 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
 
   const agent = agents.find((a) => a.id === session.agentId)
   const isFocused = workspace.focusedSessionId === session.id
+  const activeProject = workspace.activeProjectId ? projects.find((p) => p.id === workspace.activeProjectId) : null
+  const currentLayout = activeProject ? activeProject.layout : workspace.layout
+  const isMaximized = currentLayout?.maximizedSessionId === session.id
 
   const extractModel = (text: string) => {
     if (!text) return
@@ -161,7 +167,11 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
       }`}
     >
       {/* Session Titlebar */}
-      <div className="h-8 bg-[#151922] border-b border-[#1e2330] flex items-center justify-between px-2 text-xs select-none gap-2">
+      <div
+        onDoubleClick={() => maximizeSession(session.id)}
+        className="h-8 bg-[#151922] border-b border-[#1e2330] flex items-center justify-between px-2 text-xs select-none gap-2 cursor-pointer"
+        title="Duplo clique para maximizar/restaurar"
+      >
         <div className="flex items-center gap-2 truncate flex-1 min-w-0">
           {/* Project Pill */}
           {project && (
@@ -262,6 +272,20 @@ export const TerminalPane: React.FC<TerminalPaneProps> = ({ session }) => {
             title="Copiar histórico de saída"
           >
             {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+          </button>
+
+          {/* Maximize / Restore */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              maximizeSession(session.id)
+            }}
+            className={`p-1 rounded transition ${
+              isMaximized ? 'text-[#3dd6c6] bg-[#3dd6c6]/20' : 'text-[#8e9aa8] hover:text-white hover:bg-[#222a3a]'
+            }`}
+            title={isMaximized ? 'Restaurar grade (duplo clique)' : 'Maximizar janela (duplo clique)'}
+          >
+            {isMaximized ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
           </button>
 
           {/* Close */}

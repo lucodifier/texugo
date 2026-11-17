@@ -28,6 +28,8 @@ export const Sidebar: React.FC = () => {
     setSettingsModal,
     setNewSessionModal,
     createSession,
+    focusSession,
+    resumeSession,
     deleteProject
   } = useAppStore()
 
@@ -78,7 +80,7 @@ export const Sidebar: React.FC = () => {
         if (p.cwd) {
           ipc.inspectGit(p.cwd).then((info) => {
             if (info?.isRepo && info?.branch) {
-              setGitBranches((prev) => (prev[p.id] === info.branch ? prev : { ...prev, [p.id]: info.branch }))
+              setGitBranches((prev) => (prev[p.id] === info.branch ? prev : { ...prev, [p.id]: info.branch as string }))
             }
           }).catch(() => {})
         }
@@ -214,13 +216,22 @@ export const Sidebar: React.FC = () => {
                         <button
                           onClick={async (e) => {
                             e.stopPropagation()
+                            const existing = sessions.find((s) => s.projectId === project.id && (s.agentId === claudeAgent.id || s.command === claudeAgent.command))
+                            await switchProject(project.id)
+                            if (existing) {
+                              await focusSession(existing.id)
+                              if (existing.status === 'exited' && existing.resumeKind !== 'none') {
+                                await resumeSession(existing.id)
+                              }
+                              return
+                            }
                             await createSession({
                               projectId: project.id,
                               agentId: claudeAgent.id,
                               cwd: project.cwd
                             })
                           }}
-                          title="Abrir terminal Claude Code nesta pasta"
+                          title="Abrir/Retomar terminal Claude Code nesta pasta"
                           className="px-1 py-0.5 rounded text-[10px] font-bold text-[#d4a574] hover:bg-[#d4a574]/20 transition"
                         >
                           Cl
@@ -236,13 +247,22 @@ export const Sidebar: React.FC = () => {
                         <button
                           onClick={async (e) => {
                             e.stopPropagation()
+                            const existing = sessions.find((s) => s.projectId === project.id && (s.agentId === fbAgent.id || s.command === fbAgent.command))
+                            await switchProject(project.id)
+                            if (existing) {
+                              await focusSession(existing.id)
+                              if (existing.status === 'exited' && existing.resumeKind !== 'none') {
+                                await resumeSession(existing.id)
+                              }
+                              return
+                            }
                             await createSession({
                               projectId: project.id,
                               agentId: fbAgent.id,
                               cwd: project.cwd
                             })
                           }}
-                          title="Abrir terminal Freebuff nesta pasta"
+                          title="Abrir/Retomar terminal Freebuff nesta pasta"
                           className="px-1 py-0.5 rounded text-[10px] font-bold text-[#00e599] hover:bg-[#00e599]/20 transition"
                         >
                           Fb
@@ -258,13 +278,22 @@ export const Sidebar: React.FC = () => {
                         <button
                           onClick={async (e) => {
                             e.stopPropagation()
+                            const existing = sessions.find((s) => s.projectId === project.id && (s.agentId === codexAgent.id || s.command === codexAgent.command))
+                            await switchProject(project.id)
+                            if (existing) {
+                              await focusSession(existing.id)
+                              if (existing.status === 'exited' && existing.resumeKind !== 'none') {
+                                await resumeSession(existing.id)
+                              }
+                              return
+                            }
                             await createSession({
                               projectId: project.id,
                               agentId: codexAgent.id,
                               cwd: project.cwd
                             })
                           }}
-                          title="Abrir terminal Codex nesta pasta"
+                          title="Abrir/Retomar terminal Codex nesta pasta"
                           className="px-1 py-0.5 rounded text-[10px] font-bold text-[#10a37f] hover:bg-[#10a37f]/20 transition"
                         >
                           Cx

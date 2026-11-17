@@ -49,13 +49,9 @@ export const LayoutGrid: React.FC = () => {
     : workspace.layout || emptyLayout('auto')
 
   const isAuto = layout.preset === 'auto'
-  // Quando há apenas 1 terminal aberto (ou nenhum), ele SEMPRE ocupa 100% da janela (tela toda)
-  const isSingle = targetSessions.length <= 1
 
-  const effectivePreset: Exclude<PresetId, 'auto'> = isSingle
-    ? '1'
-    : isAuto
-    ? autoPresetForCount(targetSessions.length)
+  const effectivePreset: Exclude<PresetId, 'auto'> = isAuto
+    ? (targetSessions.length <= 1 ? '1' : autoPresetForCount(targetSessions.length))
     : (layout.preset as Exclude<PresetId, 'auto'>)
 
   const { slots } = layout
@@ -83,8 +79,23 @@ export const LayoutGrid: React.FC = () => {
 
   const slotCount = PRESETS[effectivePreset]?.count || 1
 
-  // Quando há apenas 1 sessão ou em modo auto, exibe apenas os terminais ativos preenchendo a tela inteira!
-  const activeSlots = (isSingle || isAuto)
+  // If a session is maximized, show only that session full screen
+  const isMaximized = Boolean(
+    layout.maximizedSessionId &&
+    targetSessions.some((s) => s.id === layout.maximizedSessionId)
+  )
+
+  if (isMaximized) {
+    const session = targetSessions.find((s) => s.id === layout.maximizedSessionId)!
+    return (
+      <div className="flex-1 p-2 bg-[#0c0e12] flex flex-col overflow-hidden">
+        <TerminalPane key={session.id} session={session} />
+      </div>
+    )
+  }
+
+  // Quando em modo auto, exibe apenas os terminais ativos preenchendo a tela inteira sem slots vazios
+  const activeSlots = isAuto
     ? targetSessions.map((s) => s.id)
     : Array.from({ length: slotCount }, (_, i) => slots[i] ?? targetSessions[i]?.id ?? null)
 

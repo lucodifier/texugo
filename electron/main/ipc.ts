@@ -25,7 +25,7 @@ import {
 } from '@shared/validation'
 import { emptyLayout, focusSessionInLayout, normalizeLayout, removeSessionFromLayout } from '@shared/layout'
 import { agentFromInput, type AppDatabase } from './database'
-import { findClaudeSessionId, findCodexSessionId } from '../terminal/session-discovery'
+import { findClaudeSessionId, findCodexSessionId, findFreebuffSessionId } from '../terminal/session-discovery'
 import { addWorktree, inspectGit, listWorktrees, removeWorktree } from '../terminal/git'
 import { readTail } from '../terminal/output-log'
 import { PtyManager, transcriptPath } from '../terminal/pty-manager'
@@ -145,6 +145,14 @@ export function registerIpc(host: Host): void {
   handle('sessions:resume', async (payload) => {
     const { id, cols, rows } = payload as { id: string; cols?: number; rows?: number }
     const session = requiredSession(host, id)
+    if (session.resumeKind === 'freebuff' && !session.externalSessionId) {
+      const fbId = findFreebuffSessionId(session.cwd, undefined, host.homeDir)
+      if (fbId) {
+        session.externalSessionId = fbId
+        session.updatedAt = Date.now()
+        host.db.updateSession(session)
+      }
+    }
     const plan = buildResumeArgs(session.resumeKind, session.args, session.externalSessionId)
     if ('error' in plan) throw new Error(plan.error)
     const size = sanitizeSize(cols ?? 120, rows ?? 32) ?? { cols: 120, rows: 32 }
@@ -459,10 +467,14 @@ function watchExternalId(host: Host, session: SessionRecord, startedAt: number):
     setTimeout(() => {
       const live = host.pty.get(session.id)
       if (!live || live.startedAt !== startedAt || live.externalSessionId) return
-      const id =
-        session.resumeKind === 'claude'
-          ? findClaudeSessionId(session.cwd, startedAt, host.homeDir)
-          : findCodexSessionId(startedAt, host.homeDir)
+      let id: string | null = null
+      if (session.resumeKind === 'claude') {
+        id = findClaudeSessionId(session.cwd, startedAt, host.homeDir)
+      } else if (session.resumeKind === 'codex') {
+        id = findCodexSessionId(startedAt, host.homeDir)
+      } else if (session.resumeKind === 'freebuff') {
+        id = findFreebuffSessionId(session.cwd, startedAt, host.homeDir)
+      }
       if (!id) return
       const current = host.db.getSession(session.id)
       if (!current) return

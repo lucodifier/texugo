@@ -21,6 +21,8 @@ export const Header: React.FC = () => {
     closeProjectTab,
     setLayoutPreset,
     createSession,
+    focusSession,
+    resumeSession,
     setNewSessionModal
   } = useAppStore()
 
@@ -255,19 +257,31 @@ export const Header: React.FC = () => {
           const bashAgent = agents.find((a) => (a.id === 'git-bash' || a.id === 'bash' || a.command === 'bash.exe' || a.id === 'windows-terminal') && a.enabled !== false)
           const cmdAgent = agents.find((a) => (a.id === 'cmd' || a.command === 'cmd.exe') && a.enabled !== false)
 
+          const openOrFocusAgent = async (agent: typeof agents[0]) => {
+            const existing = sessions.find(
+              (s) => s.projectId === activeProject.id && (s.agentId === agent.id || s.command === agent.command)
+            )
+            if (existing) {
+              await focusSession(existing.id)
+              if (existing.status === 'exited' && existing.resumeKind && existing.resumeKind !== 'none') {
+                await resumeSession(existing.id)
+              }
+              return
+            }
+            await createSession({
+              projectId: activeProject.id,
+              agentId: agent.id,
+              cwd: activeProject.cwd
+            })
+          }
+
           return (
             <div className="flex items-center gap-1">
               {claudeAgent && (
                 <button
-                  onClick={async () => {
-                    await createSession({
-                      projectId: activeProject.id,
-                      agentId: claudeAgent.id,
-                      cwd: activeProject.cwd
-                    })
-                  }}
+                  onClick={() => openOrFocusAgent(claudeAgent)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#d4a574]/40 text-[#d4a574] text-xs font-semibold transition"
-                  title={`Iniciar Claude Code em ${activeProject.name}`}
+                  title={`Abrir/Retomar Claude Code em ${activeProject.name}`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#d4a574]" />
                   <span>Claude</span>
@@ -276,15 +290,9 @@ export const Header: React.FC = () => {
 
               {fbAgent && (
                 <button
-                  onClick={async () => {
-                    await createSession({
-                      projectId: activeProject.id,
-                      agentId: fbAgent.id,
-                      cwd: activeProject.cwd
-                    })
-                  }}
+                  onClick={() => openOrFocusAgent(fbAgent)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#00e599]/40 text-[#00e599] text-xs font-semibold transition"
-                  title={`Iniciar Freebuff em ${activeProject.name}`}
+                  title={`Abrir/Retomar Freebuff em ${activeProject.name}`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#00e599]" />
                   <span>Freebuff</span>
@@ -293,15 +301,9 @@ export const Header: React.FC = () => {
 
               {codexAgent && (
                 <button
-                  onClick={async () => {
-                    await createSession({
-                      projectId: activeProject.id,
-                      agentId: codexAgent.id,
-                      cwd: activeProject.cwd
-                    })
-                  }}
+                  onClick={() => openOrFocusAgent(codexAgent)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2536] hover:bg-[#283248] border border-[#10a37f]/40 text-[#10a37f] text-xs font-semibold transition"
-                  title={`Iniciar Codex em ${activeProject.name}`}
+                  title={`Abrir/Retomar Codex em ${activeProject.name}`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-[#10a37f]" />
                   <span>Codex</span>
