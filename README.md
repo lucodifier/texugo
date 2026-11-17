@@ -19,6 +19,10 @@ Claude Code · Codex · Freebuff · PowerShell · Bash · CMD — lado a lado, e
 
 ---
 
+<div align="center">
+  <img src="docs/screenshots/Screenshot_3.png" alt="Texugo em ação: Claude Code e Freebuff lado a lado" width="900" />
+</div>
+
 ## O que é
 
 O **Texugo** é um gerenciador desktop local para Windows. Ele **não é um agente**: não chama APIs de modelos, não pede chaves e não intermedia nada. Ele abre as CLIs que você já tem instaladas e autenticadas (`claude`, `codex`, `freebuff`…) em **terminais reais (ConPTY)**, mostra vários ao mesmo tempo numa grade e guarda tudo por projeto, para você retomar de onde parou.

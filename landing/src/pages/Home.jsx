@@ -2,6 +2,7 @@ import React from 'react';
 
 const REPO = 'https://github.com/lucodifier/texugo';
 const DOWNLOAD = REPO + '/releases/latest/download/Texugo-Setup-0.1.0.exe';
+const SHOT = import.meta.env.BASE_URL + 'assets/screenshot.png';
 const ICON = import.meta.env.BASE_URL + 'assets/icon.png';
 
 const features = [
@@ -42,6 +43,10 @@ export default function Home() {
           <a className="btn-ghost" href={REPO}>Ver código</a>
         </div>
         <p className="text-sm text-gray-500 mt-4">v0.1.0 · Windows 10/11 x64 · open source</p>
+      </section>
+
+      <section className="container mx-auto px-4 pb-20">
+        <img src={SHOT} alt="Texugo com vários agentes de IA em grade, organizados por projeto" className="w-full max-w-5xl mx-auto rounded-xl border border-ink-600 shadow-2xl" />
       </section>
 
       <section className="container mx-auto px-4 pb-20">
