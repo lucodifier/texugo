@@ -12,4 +12,9 @@ app.route('/', Home, {
   keywords: 'texugo, claude code, codex, terminal, agentes de ia'
 });
 
+// No GitHub Pages o site vive em /texugo/, e o router casa pelo pathname.
+['/texugo', '/texugo/', '/texugo/index.html'].forEach((p) =>
+  app.route(p, Home, { title: 'Texugo — Gerenciador de agentes de IA em terminais reais' })
+);
+
 export default app;
